@@ -167,11 +167,14 @@ class Lum_node_index {
     }
     create_child(opt={}){
         process.env.LUM_MAIN_CHILD = true;
+        // fork用于创建独立的node进程
         this.child = child_process.fork(
             path.resolve(__dirname, 'lum_node.js'),
             process.argv.slice(2), {stdio: 'inherit', env: process.env});
+        // 来自child的消息时
         this.child.on('message', this.msg_handler.bind(this));
         this.child.on('exit', this.shutdown_on_child_exit);
+        // 发送消息给child
         this.child.send(Object.assign(opt, {command: 'run', argv: this.argv}));
     }
     msg_handler(msg){
