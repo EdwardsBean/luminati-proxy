@@ -1,5 +1,39 @@
 [
     {
+        "ver": "1.187.214",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Introduced configurable limit for number of proxy ports to avoid out of memory crashes"
+            }
+        ]
+    },
+    {
+        "ver": "1.186.952",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed setting HAR limit to unlimited"
+            }
+        ]
+    },
+    {
+        "ver": "1.186.827",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed displaying TLS Warning"
+            },
+            {
+                "type": "bug",
+                "text": "Fixed default port when UI is served via HTTPS on port 443"
+            }
+        ]
+    },
+    {
         "ver": "1.186.335",
         "type": "stable",
         "changes": [
@@ -15,7 +49,7 @@
     },
     {
         "ver": "1.186.225",
-        "type": "stable/dev",
+        "type": "stable",
         "changes": [
             {
                 "type": "bug",
