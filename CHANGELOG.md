@@ -1,5 +1,14 @@
 Luminati Proxy manager - Change Log
 
+## 1.188.363 Stable
+- :bug: Fixed socket closing on proxy port restart
+
+## 1.188.184 Stable
+- :bug: Increased the headers size. Fixed: Parse Error: Header overflow
+
+## 1.187.913 Stable
+- :sparkles: Improved performance for update settings API when a large number of proxy ports created
+
 ## 1.187.569 Stable
 - :bug: Fixed memory leak on proxy ports multiplication
 - :sparkles: Improved config synchronization flow when cloud config is empty

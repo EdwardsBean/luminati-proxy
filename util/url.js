@@ -190,7 +190,9 @@ E.is_ip_port = function(host){
 
 /* basic url validation to prevent script injection like 'javascript:....' */
 E.is_valid_url = function(url){
-    return /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z0-9-]+(\/.*)?$/i.test(url); };
+    return /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z0-9-]+(:\d+)?(\/.*)?$/i
+    .test(url);
+};
 
 E.is_valid_domain = function(domain){
     return /^([a-z0-9]([a-z0-9-_]*[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain); };
@@ -208,6 +210,9 @@ E.is_valid_email = function(email, is_signup){
         return false;
     return !!(n && E.is_valid_domain(n[1]));
 };
+
+E.get_first_valid_email = function(email){
+    return email.split(/\s+/).find(E.is_valid_email); };
 
 // XXX dmitriie: move to email.js:is_alias
 E.is_alias_email = function(email){

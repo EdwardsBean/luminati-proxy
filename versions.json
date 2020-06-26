@@ -1,5 +1,35 @@
 [
     {
+        "ver": "1.188.363",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed socket closing on proxy port restart"
+            }
+        ]
+    },
+    {
+        "ver": "1.188.184",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Increased the headers size. Fixed: Parse Error: Header overflow"
+            }
+        ]
+    },
+    {
+        "ver": "1.187.913",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Improved performance for update settings API when a large number of proxy ports created"
+            }
+        ]
+    },
+    {
         "ver": "1.187.569",
         "type": "stable",
         "changes": [
