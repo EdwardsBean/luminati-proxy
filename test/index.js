@@ -1,6 +1,5 @@
 // LICENSE_CODE ZON ISC
 'use strict'; /*jslint node:true, mocha:true*/
-const _ = require('lodash');
 const assert = require('assert');
 const dns = require('dns');
 const net = require('net');
@@ -13,6 +12,7 @@ const request = require('request');
 const lolex = require('lolex');
 const etask = require('../util/etask.js');
 const {ms} = require('../util/date.js');
+const zutil = require('../util/util.js');
 const sinon = require('sinon');
 const lpm_config = require('../util/lpm_config.js');
 const Server = require('../lib/server.js');
@@ -172,10 +172,9 @@ describe('proxy', ()=>{
             t('https post', tls,
                 ()=>({url: ping.https.url, method: 'POST', body: 'test body'}),
                 {ssl: false});
-            t('https sniffing', tls, ()=>ping.https.url, {insecure: true});
-            t('https sniffing post', tls,
-                ()=>({url: ping.https.url, method: 'POST', body: 'test body'}),
-                {insecure: true});
+            t('https sniffing', tls, ()=>ping.https.url);
+            t('https sniffing post', tls, ()=>({
+                url: ping.https.url, method: 'POST', body: 'test body'}));
         }
     });
     describe('encoding', ()=>{
@@ -236,9 +235,9 @@ describe('proxy', ()=>{
             t('bypass proxy', ()=>ping.http.url, pre_rule('bypass_proxy'),
                 ()=>ping.history[0]);
             t('http', ()=>test_url.http, {}, ()=>proxy.history[0]);
-            t('https sniffing', ()=>ping.https.url,
-                {insecure: true, ssl: true}, ()=>proxy.history[0]);
-            t('https connect', ()=>ping.https.url, {insecure: true, ssl: true},
+            t('https sniffing', ()=>ping.https.url, {ssl: true},
+                ()=>proxy.history[0]);
+            t('https connect', ()=>ping.https.url, {ssl: true},
                 ()=>proxy.history[0]);
         });
         describe('keep letter caseing and order', ()=>{
@@ -250,7 +249,7 @@ describe('proxy', ()=>{
                 };
                 l = yield lum(opt);
                 const res = yield l.test({url: _url(), headers});
-                const site_headers = _.omit(res.body.headers,
+                const site_headers = zutil.omit(res.body.headers,
                     qw`proxy-authorization x-hola-agent`);
                 assert_has(site_headers, headers, 'value');
                 assert_has(Object.keys(site_headers), Object.keys(headers),
@@ -258,19 +257,18 @@ describe('proxy', ()=>{
             }));
             t('http', ()=>test_url.http);
             t('https', ()=>ping.https.url, {ssl: false});
-            t('https sniffing', ()=>ping.https.url, {insecure: true});
+            t('https sniffing', ()=>ping.https.url);
             t('bypass http', ()=>ping.http.url, pre_rule('bypass_proxy'));
             t('bypass https', ()=>ping.https.url, Object.assign(
                 pre_rule('bypass_proxy'), {ssl: false}));
             t('bypass https sniffing', ()=>ping.https.url+'?match',
-                Object.assign(pre_rule('bypass_proxy', 'match'),
-                {insecure: true}));
+                Object.assign(pre_rule('bypass_proxy', 'match')));
         });
         describe('added headers in request', ()=>{
             it('should set User-Agent only when user_agent field is set',
             ()=>etask(function*(){
                 const req = {headers: {'user-agent': 'from_req'}};
-                l = yield lum({override_headers: true});
+                l = yield lum({});
                 l.add_headers(req);
                 assert.ok(req.headers['user-agent']=='from_req');
             }));
@@ -317,51 +315,28 @@ describe('proxy', ()=>{
                 assert.equal(res.body.auth.password, 'abc');
             }));
         });
-        describe('pool', ()=>{
-            describe('rotate_session', ()=>{
-                it('disabled', ()=>etask(function*(){
-                    l = yield lum({rotate_session: false});
-                    assert.equal(l.session_mgr.opt.rotate_session, false);
-                }));
-                const test_call = ()=>etask(function*(){
-                    const res = yield l.test({fake: 1});
-                    assert.ok(res.body);
-                    return res.body;
-                });
-                it('off, default', ()=>etask(function*(){
-                    l = yield lum({rotate_session: false});
-                    const session_a = yield test_call();
-                    const session_b = yield test_call();
-                    assert.equal(session_a, session_b);
-                }));
-                it('on, default', ()=>etask(function*(){
-                    l = yield lum({rotate_session: true});
-                    const session_a = yield test_call();
-                    const session_b = yield test_call();
-                    assert.notEqual(session_a, session_b);
-                }));
-                // t('on, sticky_ip', {rotate_session: true, sticky_ip: true});
+        describe('session control', ()=>{
+            it('disabled', ()=>etask(function*(){
+                l = yield lum({rotate_session: false});
+                assert.equal(l.session_mgr.opt.rotate_session, false);
+            }));
+            const test_call = ()=>etask(function*(){
+                const res = yield l.test({fake: 1});
+                assert.ok(res.body);
+                return res.body;
             });
-            describe('fastest', ()=>{
-                const t = size=>it(''+size, etask._fn(function*(_this){
-                    proxy.connection = hold_request;
-                    l = yield lum({pool_type: 'fastest', pool_size: size});
-                    for (let i = 0; i < size; ++i)
-                    {
-                        assert.equal(waiting.length, 0);
-                        let req = l.test();
-                        yield etask.sleep(100);
-                        assert.equal(waiting.length, size);
-                        waiting.splice(i, 1)[0]();
-                        yield req;
-                        if (waiting.length)
-                            release(waiting.length);
-                        yield etask.sleep(100);
-                    }
-                }));
-                t(1);
-                // broken t(2);
-            });
+            it('single session, default', ()=>etask(function*(){
+                l = yield lum({});
+                const session_a = yield test_call();
+                const session_b = yield test_call();
+                assert.equal(session_a, session_b);
+            }));
+            it('rotate_session', ()=>etask(function*(){
+                l = yield lum({rotate_session: true});
+                const session_a = yield test_call();
+                const session_b = yield test_call();
+                assert.notEqual(session_a, session_b);
+            }));
         });
         describe('luminati params', ()=>{
             const t = (name, target, expected)=>it(name, ()=>etask(function*(){
@@ -484,12 +459,12 @@ describe('proxy', ()=>{
                 port: 24000,
                 url: 'localhost:'+ping.https.port,
                 method: 'CONNECT',
-            }), {insecure: true, ssl: false});
+            }), {ssl: false});
             t('https sniffing', ()=>ping.https.url, ()=>({
                 port: 24000,
                 method: 'GET',
                 url: ping.https.url,
-            }), {insecure: true, ssl: true});
+            }), {ssl: true});
             t('bypass http', ()=>ping.http.url, ()=>({
                 port: 24000,
                 url: ping.http.url,
@@ -502,7 +477,7 @@ describe('proxy', ()=>{
                 method: 'CONNECT',
                 super_proxy: null,
             }), Object.assign(pre_rule('bypass_proxy'),
-                {insecure: true, ssl: false}));
+                {ssl: false}));
             t('null_response', ()=>ping.http.url, ()=>({
                 port: 24000,
                 status_code: 200,
@@ -775,71 +750,6 @@ describe('proxy', ()=>{
                 return handle_proxy_resp_org(...args)(_res);
             });
         };
-        const make_process_rule_req=(proxy_res, html, res)=>etask(function*(){
-            const req = {ctx: {response: {}, proxies: [],
-                timeline: {track: ()=>null, req: {create: Date.now()}},
-                log: {info: ()=>null}, skip_rule: ()=>false}};
-            Object.assign(proxy_res, {
-                end: ()=>null, pipe: ()=>({pipe: ()=>null}),
-                on: function(event, fn){
-                    if (event=='data')
-                    {
-                        fn(Buffer.from(html));
-                        fn(Buffer.from('random data'));
-                    }
-                    return this;
-                },
-                once: function(event, fn){
-                    if (event=='end')
-                        fn();
-                    return this;
-                }
-            });
-            res.end = ()=>null;
-            const et = etask.wait();
-            l.handle_proxy_resp(req, res, {}, et)(proxy_res);
-            return yield et;
-        });
-        it('should process data', ()=>etask(function*(){
-            const process = {price: `$('#priceblock_ourprice').text()`};
-            l = yield lum({rules: [{action: {process}, type: 'after_body'}]});
-            const html = `
-              <body>
-                <div>
-                  <p id="priceblock_ourprice">$12.99</p>
-                </div>
-              </body>`;
-            const proxy_res = {headers: {'content-encoding': 'text'}};
-            const res = {write: sinon.spy()};
-            const response = yield make_process_rule_req(proxy_res, html, res);
-            assert.ok(!proxy_res.headers['content-encoding']);
-            assert.equal(proxy_res.headers['content-type'],
-                'application/json; charset=utf-8');
-            const new_body = JSON.parse(
-                lutil.decode_body(response.body).toString());
-            assert.deepEqual(new_body, {price: '$12.99'});
-            sinon.assert.calledWith(res.write, response.body[0]);
-        }));
-        it('should process data with error', ()=>etask(function*(){
-            const process = {price: 'a-b-v'};
-            l = yield lum({rules: [{action: {process}, type: 'after_body'}]});
-            const html = `
-              <body>
-                <div>
-                  <p id="priceblock_ourprice">$12.99</p>
-                </div>
-              </body>`;
-            const proxy_res = {headers: {'content-encoding': 'text'}};
-            const res = {write: sinon.spy()};
-            const response = yield make_process_rule_req(proxy_res, html, res);
-            assert.ok(!proxy_res.headers['content-encoding']);
-            assert.equal(proxy_res.headers['content-type'],
-                'application/json; charset=utf-8');
-            const new_body = JSON.parse(response.body.toString());
-            assert.deepEqual(new_body, {price: {context: 'a-b-v',
-                error: 'processing data', message: 'a is not defined'}});
-            sinon.assert.calledWith(res.write, response.body[0]);
-        }));
         it('check Trigger', ()=>{
             const Trigger = require('../lib/rules').t.Trigger;
             const t = (code, _url, expected)=>{
@@ -920,20 +830,6 @@ describe('proxy', ()=>{
                 url: 'test'}]});
             t({ctx: {url: 'test'}}, true);
         }));
-        it('check post_body', ()=>etask(function*(){
-            l = yield lum({rules: [{
-                body: 'test',
-                action: {process: {}},
-                url: 'test',
-            }]});
-            const t = (req, _res, body, expected)=>{
-                const r = l.rules.post_body(req, {}, {}, _res, body);
-                assert.equal(r, expected);
-            };
-            sinon.stub(l.rules, 'action').returns(true);
-            sinon.stub(l.rules, 'process_response');
-            t({ctx: {h_context: 'STATUS CHECK'}});
-        }));
         it('check post', ()=>etask(function*(){
             l = yield lum({rules: [{url: 'test'}]});
             const t = (req, _res, expected)=>{
@@ -975,7 +871,7 @@ describe('proxy', ()=>{
                         action_type: 'ban_ip',
                         status: '200',
                         trigger_type: 'status',
-                    }], insecure: true, ssl: is_ssl});
+                    }], ssl: is_ssl});
                     l.on('retry', opt=>{
                         l.lpm_request(opt.req, opt.res, opt.head, opt.post);
                     });
@@ -1519,27 +1415,20 @@ describe('proxy', ()=>{
             l.on('usage', ()=>this.continue());
             l.on('usage_abort', ()=>this.continue());
             yield this.wait();
-            assert.equal(_.get(l, 'history.0.status_code'), expected_status);
-            assert.equal(_.get(l, 'history.0.rules.length'), expected_rules);
+            assert.equal(zutil.get(l, 'history.0.status_code'),
+                expected_status);
+            assert.equal(zutil.get(l, 'history.0.rules.length'),
+                expected_rules);
         }));
         let config = {smtp: ['127.0.0.1:'+TEST_SMTP_PORT]};
         let rules = [{action: {ban_ip: 0}, action_type: 'ban_ip',
             body: '220', trigger_type: 'body'}];
         t('rules is triggered regular req',
-            _.assign({}, config, {rules}), 200, 1, {close: true});
+            Object.assign({}, config, {rules}), 200, 1, {close: true});
         t('rules is triggered when server ends connection',
-            _.assign({}, config, {rules}), 200, 1, {smtp_close: true});
-        // XXX viktor: fix code for test to pass
-        // rules = [{action: {ban_ip: 0}, action_type: 'ban_ip',
-        //     body: '^$', trigger_type: 'body'}];
-        // t('rules is triggered on abort',
-        //     _.assign({}, config, {rules}), 'canceled', 0, {abort: true});
-        // XXX viktor: fix code for test to pass
-        // rules = [{action: {retry: 2}, action_type: 'retry',
-        //     body: '^$', trigger_type: 'body'}];
-        // t('retry rule on timeout', _.assign({}, config, {rules}),
-        //     'canceled', 1, {silent_timeout: true});
+            Object.assign({}, config, {rules}), 200, 1, {smtp_close: true});
     });
+    // XXX krzysztof/vitkor: move to util.js
     describe('util', ()=>{
         describe('create_count_stream', ()=>{
             let t = (name, limit, chunks, expected)=>it(name, function(done){

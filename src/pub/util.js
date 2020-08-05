@@ -1,7 +1,7 @@
 // LICENSE_CODE ZON ISC
 'use strict'; /*jslint react:true, es6:true*/
 import React from 'react';
-import _ from 'lodash';
+import semver from 'semver';
 import user_agent_gen from '/www/util/pub/user_agent_gen.js';
 import etask from '../../util/etask.js';
 
@@ -230,10 +230,6 @@ export const get_static_country = (proxy, zones)=>{
     return false;
 };
 
-export const swagger_url = 'http://petstore.swagger.io/?url=https://'
-+'raw.githubusercontent.com/luminati-io/luminati-proxy/master/lib/'
-+'swagger.json#/Proxy';
-
 export const report_exception = (error, context)=>etask(function*(){
     this.on('uncaught', e=>console.log(e));
     const {message=error} = error;
@@ -248,9 +244,15 @@ export const perr = (type, message, stack, context)=>etask(function*(){
     });
 });
 
-const undescribed_error = _.once(message=>{
-    perr('undescribed_error', message);
-});
+const undescribed_error = (()=>{
+    let executed;
+    return message=>{
+        if (executed)
+            return;
+        perr('undescribed_error', message);
+        executed = true;
+    };
+})();
 
 export const get_troubleshoot = (body, status_code, headers)=>{
     let title;
@@ -281,3 +283,22 @@ export const get_troubleshoot = (body, status_code, headers)=>{
 
 export const get_location_port = ()=>window.location.port ||
     {'http:': 80, 'https:': 443}[window.location.protocol];
+
+export const get_last_versions = (ver_cur, ver_last)=>{
+    if (!ver_cur || !ver_last)
+        return {versions: [], changes: []};
+    const versions = ver_last.versions.filter(v=>semver.lt(ver_cur, v.ver));
+    const changes = versions.reduce((acc, ver)=>acc.concat(ver.changes), []);
+    return {versions, changes};
+};
+
+export const get_changes_tooltip = changes=>{
+    if (!changes || !changes.length)
+        return '';
+    const list = changes.map(c=>`<li>${c.text}</li>`).join('\n');
+    return `Changes: <ul>${list}</ul>`;
+};
+
+export const bind_all = (_this, methods)=>{
+    methods.forEach(m=>_this[m] = _this[m].bind(_this));
+};

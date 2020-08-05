@@ -1,5 +1,135 @@
 [
     {
+        "ver": "1.192.600",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Fixed balancing super proxies when passing explicit usernames"
+            }
+        ]
+    },
+    {
+        "ver": "1.192.577",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Updated minimal requirements and added recommended"
+            },
+            {
+                "type": "bug",
+                "text": "Made country and state inputs searching for data by typing"
+            }
+        ]
+    },
+    {
+        "ver": "1.192.271",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Improved logging: added host and username for easier debugging"
+            }
+        ]
+    },
+    {
+        "ver": "1.191.644",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Prevent creation of conflicting proxy ports"
+            },
+            {
+                "type": "sparkles",
+                "text": "Added upgrade warning when submiting a bug from non-latest version"
+            }
+        ]
+    },
+    {
+        "ver": "1.191.312",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Security improvements for Cloud Proxy Manager"
+            },
+            {
+                "type": "sparkles",
+                "text": "Added warning when connections from any IP allowed"
+            },
+            {
+                "type": "bug",
+                "text": "Fixed file descriptors and memory leak caused by client errors when using socks proxy"
+            },
+            {
+                "type": "bug",
+                "text": "Fixed multiple errors in the UI"
+            }
+        ]
+    },
+    {
+        "ver": "1.190.862",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed legacy API page in Swagger"
+            }
+        ]
+    },
+    {
+        "ver": "1.190.701",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "API documentation moved from swagger to https://luminati.io/doc/api#lpm_endpoints"
+            }
+        ]
+    },
+    {
+        "ver": "1.190.176",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "UI improvements: show the optimized bandwidth in the stats"
+            }
+        ]
+    },
+    {
+        "ver": "1.189.541",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Rules UI improvements"
+            }
+        ]
+    },
+    {
+        "ver": "1.189.26",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed logging out when luminati server is not available"
+            }
+        ]
+    },
+    {
+        "ver": "1.188.647",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "sparkles",
+                "text": "Adjustments for LPM in the Cloud"
+            }
+        ]
+    },
+    {
         "ver": "1.188.363",
         "type": "stable",
         "changes": [

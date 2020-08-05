@@ -8,6 +8,23 @@ import Pure_component from '/www/util/pub/pure_component.js';
 import $ from 'jquery';
 import setdb from '../../../util/setdb.js';
 
+const reverse_lookup_opt = [
+    {key: 'No', value: ''},
+    {key: 'DNS', value: 'dns'},
+    {key: 'File', value: 'file'},
+    {key: 'Values', value: 'values'},
+];
+
+const dns_opt = [
+    {key: 'Local (default) - resolved by the super proxy', value: 'local'},
+    {key: 'Remote - resolved by peer', value: 'remote'},
+];
+
+const proxy_opt = [
+    {key: 'Automatic (default)', value: ''},
+    {key: 'China', value: `servercountry-cn.zproxy.lum-superproxy.io`},
+];
+
 export default class Rotation extends Pure_component {
     state = {};
     goto_field = setdb.get('head.proxy_edit.goto_field');
@@ -32,7 +49,7 @@ export default class Rotation extends Pure_component {
         return type;
     };
     open_modal = ()=>$('#allocated_ips').modal('show');
-    move_to_ssl = ()=>this.goto_field('ssl');
+    set_ssl = ()=>this.set_field('ssl', true);
     render(){
         if (!this.state.disabled_fields)
             return null;
@@ -51,8 +68,8 @@ export default class Rotation extends Pure_component {
         }
         const sess_note =
             <Note>
-              <span><T>Should be used only when</T></span>{' '}
-              <a className="link" onClick={this.move_to_ssl}>
+              <span><T>Can be used only when</T></span>{' '}
+              <a className="link" onClick={this.set_ssl}>
                 <T>SSL analyzing</T>
               </a>{' '}
               <span><T>is turned on.</T></span>
@@ -61,11 +78,22 @@ export default class Rotation extends Pure_component {
               <Tab_context.Provider value="rotation">
                 <Config type="select_number" id="pool_size"
                   note={pool_size_note}/>
-                <Config type="yes_no" id="rotate_session"/>
-                <Config type="yes_no" id="sticky_ip"/>
+                <Config type="yes_no" id="rotate_session"
+                  disabled={this.state.form.sticky_ip}/>
+                <Config type="yes_no" id="sticky_ip"
+                  disabled={this.state.form.rotate_session}/>
                 <Config type="text" id="session"/>
                 <Config type="yes_no" id="session_termination"
-                  note={sess_note}/>
+                  note={!this.state.form.ssl && sess_note || ''}
+                  disabled={!this.state.form.ssl}/>
+                <Config type="select" id="proxy" data={proxy_opt}/>
+                <Config type="select" id="dns" data={dns_opt}/>
+                <Config type="select" id="reverse_lookup"
+                  data={reverse_lookup_opt}/>
+                {this.state.form.reverse_lookup=='file' &&
+                  <Config type="text" id="reverse_lookup_file"/>}
+                {this.state.form.reverse_lookup=='values' &&
+                  <Config type="textarea" id="reverse_lookup_values"/>}
               </Tab_context.Provider>
             </div>;
     }

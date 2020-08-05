@@ -12,7 +12,7 @@ import {migrate_trigger, no_ssl_trigger_types, trigger_types,
 import {ms} from '../../../util/date.js';
 import zutil from '../../../util/util.js';
 import {Labeled_controller, with_proxy_ports, Cm_wrapper,
-    Field_row_raw, Warning} from '../common.js';
+    Warning} from '../common.js';
 import {tabs} from './fields.js';
 import Proxy_tester from '../proxy_tester.js';
 import Tooltip from '../common/tooltip.js';
@@ -37,8 +37,6 @@ const rule_prepare = rule=>{
         action.refresh_ip = true;
     else if (rule.action=='save_to_pool')
         action.reserve_session = true;
-    else if (rule.action=='process')
-        action.process = rule.process && JSON.parse(rule.process);
     else if (rule.action=='request_url')
     {
         action.request_url = {
@@ -109,8 +107,6 @@ export const map_rule_to_form = rule=>{
         result.ban_ip_duration = rule.action.ban_ip_global/ms.MIN;
     if (rule.action.ban_ip_domain)
         result.ban_ip_duration = rule.action.ban_ip_domain/ms.MIN;
-    if (rule.action.process)
-        result.process = JSON.stringify(rule.action.process, null, '  ');
     result.trigger_code = rule.trigger_code;
     result.type = rule.type;
     result.active = rule.active;
@@ -147,12 +143,6 @@ export default class Rules extends Pure_component {
             }),
         }), this.rules_update);
     };
-    rule_add = ()=>{
-        this.setState(prev=>({
-            rules: [{id: prev.max_id+1}, ...prev.rules],
-            max_id: prev.max_id+1,
-        }));
-    };
     rule_del = id=>{
         this.setState(prev=>{
             const new_state = {rules: prev.rules.filter(r=>r.id!=id)};
@@ -169,7 +159,45 @@ export default class Rules extends Pure_component {
         const rules = this.state.rules.map(rule_prepare).filter(Boolean);
         this.set_field('rules', rules);
     };
-    goto_ssl = ()=>this.goto_field('ssl');
+    turn_ssl = ()=>this.set_field('ssl', true);
+    rule_add = (rule={})=>{
+        this.setState(prev=>{
+            rule.id = prev.max_id+1;
+            return {
+                rules: [rule, ...prev.rules],
+                max_id: prev.max_id+1,
+            };
+        }, this.rules_update);
+    };
+    rule_add_cb = ()=>{
+        this.rule_add();
+    };
+    savebw_rule_exists = ()=>{
+        return this.state.rules.some(r=>{
+            return r.action=='bypass_proxy' &&
+                (r.trigger_url_regex||'').includes('jpg');
+        });
+    };
+    savebw_rule_add = ()=>{
+        this.rule_add({
+            action: 'bypass_proxy',
+            trigger_type: 'url',
+            trigger_url_regex: '\\.(png|jpg|jpeg|svg|gif|mp3|avi|mp4)$',
+        });
+    };
+    retry_rule_exists = ()=>{
+        return this.state.rules.some(r=>{
+            return r.action=='retry' && r.status=='(4|5)..';
+        });
+    };
+    retry_rule_add = ()=>{
+        this.rule_add({
+            action: 'retry',
+            trigger_type: 'status',
+            status: '(4|5)..',
+            retry_number: 1,
+        });
+    };
     render(){
         const {form, rules, disabled_fields, www} = this.state;
         if (!form)
@@ -185,19 +213,31 @@ export default class Rules extends Pure_component {
                         Most of the options here are available only when using
                       </T>
                       {' '}
-                      <a className="link" onClick={this.goto_ssl}>
+                      <a className="link" onClick={this.turn_ssl}>
                       <T>SSL analyzing</T></a>
                     </span>
                   </React.Fragment>
                 }/>
               }
-              <button className="btn btn_lpm btn_lpm_small rule_add_btn"
-                onClick={this.rule_add} disabled={disabled_fields.rules}>
-                <T>New rule</T>
-                <i className="glyphicon glyphicon-plus"/>
-              </button>
+              <New_rule_btn
+                disabled={disabled_fields.rules}
+                on_click={this.rule_add_cb}>
+                <T>New custom rule</T>
+              </New_rule_btn>
+              <New_rule_btn
+                disabled={disabled_fields.rules || this.savebw_rule_exists()}
+                on_click={this.savebw_rule_add}>
+                <T>Save bandwidth</T>
+              </New_rule_btn>
+              <New_rule_btn
+                disabled={disabled_fields.rules || this.retry_rule_exists()}
+                on_click={this.retry_rule_add}>
+                <T>Retry failed requests</T>
+              </New_rule_btn>
               {rules.map(r=>
-                <Rule key={r.id} rule={r} rule_del={this.rule_del}
+                <Rule key={r.id}
+                  rule={r}
+                  rule_del={this.rule_del}
                   www={www} ssl={ssl_analyzing_enabled}
                   disabled={disabled_fields.rules}/>
               )}
@@ -205,6 +245,14 @@ export default class Rules extends Pure_component {
             </div>;
     }
 }
+
+const New_rule_btn = ({on_click, disabled, children})=>{
+    return <button className="btn btn_lpm btn_lpm_small rule_add_btn"
+          onClick={on_click} disabled={disabled}>
+          {children}
+          <i className="glyphicon glyphicon-plus"/>
+        </button>;
+};
 
 const Tester_wrapper = withRouter(class Tester_wrapper extends Pure_component {
     render(){
@@ -266,7 +314,7 @@ const Ban_ips_note = withRouter(({match, history})=>{
 });
 
 class Rule extends Pure_component {
-    state = {};
+    state = {expanded: false};
     componentDidMount(){
         const rule = this.props.rule;
         if (rule && (rule.trigger_code || rule.type))
@@ -287,22 +335,61 @@ class Rule extends Pure_component {
         }
     };
     toggle_active = e=>{
+        e.stopPropagation();
         const active = this.props.rule.active===undefined||
             this.props.rule.active;
         this.set_rule_field('active', !active);
+    };
+    expand = ()=>{
+        this.setState({expanded: true});
+    };
+    collapse = ()=>{
+        this.setState({expanded: false});
     };
     render(){
         let {rule_del, rule, ssl, disabled} = this.props;
         const active = rule.active===undefined||rule.active;
         const {ui_blocked} = this.state;
+        const trigger = trigger_types.find(t=>t.value==rule.trigger_type);
+        let trigger_label;
+        if (rule.trigger_code)
+            trigger_label = 'Custom code';
+        else if (!trigger)
+            trigger_label = 'Trigger not set';
+        else
+        {
+            const tv = trigger && ': '+(rule[trigger.value] ?
+                rule[trigger.value] : 'not set');
+            trigger_label = trigger.key+tv;
+        }
+        const action = action_types.find(a=>a.value==rule.action);
+        const action_label = action ? action.key : 'Action not set';
+        let rule_label;
+        if (!trigger && !action)
+            rule_label = 'Empty rule - click to edit';
+        else
+            rule_label = trigger_label+' -> '+action_label;
         return <div>
-          <div className="rule_wrapper">
-            <Trigger rule={rule} ui_blocked={ui_blocked} ssl={ssl}
-              set_rule_field={this.set_rule_field} disabled={disabled}
-              change_ui_block={this.change_ui_block}/>
-            <Action rule={rule} set_rule_field={this.set_rule_field}
-              change_ui_block={this.change_ui_block}/>
+          <div className={classnames('rule_wrapper',
+            {collapsed: !this.state.expanded})}
+            onClick={this.expand}>
+            {this.state.expanded &&
+              <React.Fragment>
+                <Trigger rule={rule} ui_blocked={ui_blocked} ssl={ssl}
+                  set_rule_field={this.set_rule_field} disabled={disabled}
+                  change_ui_block={this.change_ui_block}/>
+                <Action rule={rule} set_rule_field={this.set_rule_field}
+                  change_ui_block={this.change_ui_block}/>
+              </React.Fragment>
+            }
+            {!this.state.expanded &&
+              <div className="ui">
+                {rule_label}
+              </div>
+            }
             <Btn_rule_del on_click={()=>rule_del(rule.id)}/>
+            <Btn_rule_toggle expanded={this.state.expanded}
+              collapse={this.collapse} expand={this.expand}/>
             <Toggle_on_off val={active} on_click={this.toggle_active}/>
           </div>
         </div>;
@@ -441,16 +528,6 @@ class Action extends Pure_component {
                     data={[0, 1, 5, 10, 30, 60]} sufix="minutes" rule={rule}
                     note={<Ban_ips_note/>}/>
                 }
-                {rule.action=='process' &&
-                  <div>
-                    <Rule_config id="process" type="json" rule={rule}/>
-                    <Field_row_raw>
-                      Test data processing in
-                      <a onClick={this.goto_tester} className="link api_link">
-                        proxy tester</a>
-                    </Field_row_raw>
-                  </div>
-                }
                 {rule.action=='request_url' &&
                   <div>
                     <Rule_config id="request_url" type="url" rule={rule}/>
@@ -500,7 +577,7 @@ class Trigger extends Pure_component {
                 it based on your selections.`;
         }
         return <React.Fragment>
-              <div className="trigger ui">
+              <div className="trigger ui" onFocus={e=>e.stopPropagation()}>
                 <Tooltip title={tip}>
                 <div className={classnames('mask', {active: ui_blocked})}>
                   <button className="btn btn_lpm btn_lpm_small reset_btn"
@@ -578,4 +655,25 @@ class Trigger_code extends Pure_component {
 }
 
 const Btn_rule_del = ({on_click})=>
-    <button className="btn_rule_del" onClick={on_click}/>;
+    <Tooltip title="Delete">
+      <button tabIndex={-1} className="btn_rule del" onClick={on_click}
+        onFocus={e=>e.stopPropagation()}/>
+    </Tooltip>;
+
+const Btn_rule_toggle = ({expanded, expand, collapse})=>{
+    const on_click = e=>{
+        e.stopPropagation();
+        if (expanded)
+            return collapse();
+        expand();
+    };
+    const tip = expanded ? 'Collapse' : 'Expand';
+    return <Tooltip title={tip}>
+        <div tabIndex={-1}
+        className="btn_rule toggle"
+        onClick={on_click}
+        onFocus={e=>e.stopPropagation()}>
+          <button className={classnames({expanded, collapsed: !expanded})}/>
+        </div>
+      </Tooltip>;
+};

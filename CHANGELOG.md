@@ -1,5 +1,43 @@
 Luminati Proxy manager - Change Log
 
+## 1.192.600 Stable
+- :sparkles: Fixed balancing super proxies when passing explicit usernames
+
+## 1.192.577 Stable
+- :sparkles: Updated minimal requirements and added recommended
+- :bug: Made country and state inputs searching for data by typing
+
+## 1.192.271 Stable
+- :sparkles: Improved logging: added host and username for easier debugging
+
+## 1.191.644 Stable
+- :bug: Prevent creation of conflicting proxy ports
+- :sparkles: Added upgrade warning when submiting a bug from non-latest version
+
+## 1.191.312 Stable
+- :sparkles: Security improvements for Cloud Proxy Manager
+- :sparkles: Added warning when connections from any IP allowed
+- :bug: Fixed file descriptors and memory leak caused by client errors when using socks proxy
+- :bug: Fixed multiple errors in the UI
+
+## 1.190.862 Stable
+- :bug: Fixed legacy API page in Swagger
+
+## 1.190.701 Stable
+- :sparkles: API documentation moved from swagger to https://luminati.io/doc/api#lpm_endpoints
+
+## 1.190.176 Stable
+- :sparkles: UI improvements: show the optimized bandwidth in the stats
+
+## 1.189.541 Stable
+- :sparkles: Rules UI improvements
+
+## 1.189.26 Stable
+- :bug: Fixed logging out when luminati server is not available
+
+## 1.188.647 Stable
+- :sparkles: Adjustments for LPM in the Cloud
+
 ## 1.188.363 Stable
 - :bug: Fixed socket closing on proxy port restart
 

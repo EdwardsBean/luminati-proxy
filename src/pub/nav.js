@@ -9,7 +9,6 @@ import etask from '../../util/etask.js';
 import ajax from '../../util/ajax.js';
 import setdb from '../../util/setdb.js';
 import zurl from '../../util/url.js';
-import {swagger_url} from './util.js';
 import Schema from './schema.js';
 import Report_bug_modal from './report_bug.js';
 import Cpu_warning from './cpu_warning.js';
@@ -30,7 +29,8 @@ const Nav = ()=>
       <Shutdown_modal/>
     </div>;
 
-const Nav_left = withRouter(class Nav_left extends Pure_component {
+const Nav_left = with_www_api(withRouter(
+class Nav_left extends Pure_component {
     state = {lock: false};
     componentDidMount(){
         this.setdb_on('head.lock_navigation', lock=>
@@ -41,6 +41,8 @@ const Nav_left = withRouter(class Nav_left extends Pure_component {
         if (!this.state.settings)
             return null;
         const zagent = this.state.settings.zagent;
+        const faq_url = this.props.www_api+'/faq#proxy';
+        const api_url = this.props.www_api+'/doc/api#lpm_endpoints';
         return <div className="nav_left">
               <div className={classnames('menu', {lock: this.state.lock})}>
                 <Nav_link to="/overview" name="overview" label="Overview"/>
@@ -52,14 +54,16 @@ const Nav_left = withRouter(class Nav_left extends Pure_component {
                   <Nav_link to="/config" name="config"
                     label="Manual configuration"/>
                 }
-                <Nav_link ext to={swagger_url} name="api"
+                <Nav_link ext to={api_url} name="api"
                   label="API documentation"/>
+                {!zagent &&
+                   <Nav_link ext to={faq_url} name="faq" label="FAQ"/>
+                }
               </div>
               <div className="menu_filler"/>
-              <Footer/>
             </div>;
     }
-});
+}));
 
 const Nav_link = ({label, to, name, ext})=>
     <Route path={to}>
@@ -119,34 +123,6 @@ class Nav_top extends Pure_component {
             </div>;
     }
 }
-
-const Footer = with_www_api(class Footer extends Pure_component {
-    constructor(props){
-        super(props);
-        const url_o = zurl.parse(document.location.href);
-        const qs_o = zurl.qs_parse((url_o.search||'').substr(1));
-        this.state = {
-            embedded: qs_o.embedded=='true' || window.self!=window.top,
-        };
-    }
-    render(){
-        return <div className="footer">
-            {!this.state.embedded &&
-              <React.Fragment>
-                <div>
-                  <a href={`${this.props.www_api}/faq#proxy`}
-                    rel="noopener noreferrer"
-                    target="_blank" className="link"><T>FAQ</T></a>
-                </div>
-                <div>
-                  <a href="mailto:lpm@luminati.io" className="link">
-                    <T>Contact</T></a>
-                </div>
-              </React.Fragment>
-            }
-          </div>;
-    }
-});
 
 const Logo = withRouter(({lock})=>
     <Link to="/overview" className={classnames('logo', {lock})}/>);

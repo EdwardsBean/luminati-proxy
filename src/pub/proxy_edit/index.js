@@ -8,7 +8,7 @@ import etask from '../../../util/etask.js';
 import ajax from '../../../util/ajax.js';
 import setdb from '../../../util/setdb.js';
 import {qw} from '../../../util/string.js';
-import {Loader, Warnings, Loader_small, Preset_description, Ext_tooltip,
+import {Loader, Loader_small, Preset_description, Ext_tooltip,
     Checkbox} from '../common.js';
 import {Nav_tabs, Nav_tab} from '../common/nav_tabs.js';
 import React_tooltip from 'react-tooltip';
@@ -19,7 +19,6 @@ import Rules from './rules.js';
 import Targeting from './targeting.js';
 import General from './general.js';
 import Rotation from './rotation.js';
-import Speed from './speed.js';
 import Headers from './headers.js';
 import Logs from './logs.js';
 import Alloc_modal from './alloc_modal.js';
@@ -28,7 +27,8 @@ import Tooltip from '../common/tooltip.js';
 import {Modal} from '../common/modals.js';
 import {T} from '../common/i18n.js';
 import {Select_zone} from '../common/controls.js';
-import {report_exception} from '../util.js';
+import {report_exception, bind_all} from '../util.js';
+import Warnings_modal from '../common/warnings_modal.js';
 import '../css/proxy_edit.less';
 
 const Index = withRouter(class Index extends Pure_component {
@@ -60,7 +60,7 @@ const Index = withRouter(class Index extends Pure_component {
             if (!proxy)
                 return this.props.history.push('/overview');
             const form = Object.assign({}, proxy);
-            this.apply_preset(form, form.preset||'session_long');
+            this.apply_preset(form);
             this.setState({proxies}, this.delayed_loader());
         });
         this.setdb_on('ws.zones', zones=>{
@@ -172,6 +172,10 @@ const Index = withRouter(class Index extends Pure_component {
         return false;
     };
     apply_preset = (_form, preset)=>{
+        if (!preset)
+            preset = _form.preset;
+        if (!presets.get(preset))
+            preset = presets.get_default().key;
         const form = Object.assign({}, _form);
         const last_preset = form.preset ? presets.get(form.preset) : null;
         if (last_preset && last_preset.key!=preset && last_preset.clean)
@@ -200,21 +204,13 @@ const Index = withRouter(class Index extends Pure_component {
             form.vips = [];
         if (!form.users)
             form.users = [];
-        if (form.city && !Array.isArray(form.city) && form.state)
-        {
-            form.city = [{id: form.city,
-                label: form.city+' ('+form.state+')'}];
-        }
-        else if (!Array.isArray(form.city))
-            form.city = [];
-        if (form.asn && !Array.isArray(form.asn))
-            form.asn = [{id: ''+form.asn, label: ''+form.asn}];
-        else if (!Array.isArray(form.asn))
-            form.asn = [];
+        qw`country state`.forEach(k=>{
+            form[k] = (form[k]||'').toLowerCase();
+        });
+        if (form.city && !form.city.includes('|') && form.state)
+            form.city = form.city+'|'+form.state;
         if (!this.original_form)
             this.original_form = form;
-        form.country = (form.country||'').toLowerCase();
-        form.state = (form.state||'').toLowerCase();
         if (form.session==='true'||form.session===true)
             delete form.session;
         this.setState({form});
@@ -319,14 +315,10 @@ const Index = withRouter(class Index extends Pure_component {
             save_form.smtp = save_form.smtp.filter(Boolean);
         else
             save_form.smtp = [];
-        if (save_form.city.length)
-            save_form.city = save_form.city[0].id;
-        else
-            save_form.city = '';
-        if (save_form.asn.length==1)
-            save_form.asn = Number(save_form.asn[0].id);
-        else if (!save_form.asn.length)
-            save_form.asn = '';
+        if (save_form.city)
+            save_form.city = save_form.city.split('|')[0];
+        if (save_form.asn)
+            save_form.asn = Number(save_form.asn);
         if (save_form.headers)
             save_form.headers = save_form.headers.filter(h=>h.name&&h.value);
         if (save_form.session && save_form.session.replace)
@@ -370,10 +362,8 @@ const Index = withRouter(class Index extends Pure_component {
                 <Nav_tabs_wrapper/>
               </div>
               {this.state.zones && <Main_window/>}
-              <Modal className="warnings_modal" id="save_proxy_errors"
-                style={{zIndex: 10000}} title={t('Error')} no_cancel_btn>
-                <Warnings warnings={this.state.error_list}/>
-              </Modal>
+              <Warnings_modal id="save_proxy_errors"
+                warnings={this.state.error_list}/>
               <Alloc_modal type={type} form={this.state.form} zone={zone}
                 plan={curr_plan}/>
             </div>}</T>;
@@ -382,8 +372,7 @@ const Index = withRouter(class Index extends Pure_component {
 
 const Nav_tabs_wrapper = withRouter(
 class Nav_tabs_wrapper extends Pure_component {
-    tabs = ['logs', 'target', 'rotation', 'speed', 'rules', 'headers',
-        'general'];
+    tabs = ['logs', 'target', 'rotation', 'rules', 'headers', 'general'];
     set_tab = id=>{
         const port = this.props.match.params.port;
         const pathname = `/proxy/${port}/${id}`;
@@ -431,7 +420,6 @@ const Main_window = withRouter(({match})=>
     <div className="main_window">
       <Switch>
         <Route path={`${match.path}/target`} component={Targeting}/>
-        <Route path={`${match.path}/speed`} component={Speed}/>
         <Route path={`${match.path}/rules`} component={Rules}/>
         <Route path={`${match.path}/rotation`} component={Rotation}/>
         <Route path={`${match.path}/headers`} component={Headers}/>
@@ -484,12 +472,7 @@ class Nav extends Pure_component {
         for (let field in save_form)
         {
             if (!this.is_valid_field(field, new_zone))
-            {
-                let v = '';
-                if (field=='city'||field=='asn')
-                    v = [];
-                this.set_field(field, v);
-            }
+                this.set_field(field, '');
         }
     };
     is_unblocker(zone_name){
@@ -534,7 +517,7 @@ class Confirmation_modal extends Pure_component {
     constructor(props){
         super(props);
         this.state = {no_confirm: false};
-        _.bindAll(this, qw`toggle_dismiss handle_ok handle_dismiss`);
+        bind_all(this, qw`toggle_dismiss handle_ok handle_dismiss`);
     }
     componentDidMount(){
         let no_confirm = localStorage.getItem('no-confirm-zone-preset');

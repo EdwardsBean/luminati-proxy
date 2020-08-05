@@ -1,15 +1,15 @@
 // LICENSE_CODE ZON ISC
 'use strict'; /*jslint react:true, es6:true*/
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import Proxies from './proxies.js';
 import Stats from './stats.js';
 import Har_viewer from './har_viewer';
 import Pure_component from '/www/util/pub/pure_component.js';
 import $ from 'jquery';
-import semver from 'semver';
 import {T} from './common/i18n.js';
 import {Warning, Warnings, with_www_api, Loader_small} from './common.js';
-import {perr} from './util.js';
+import {perr, get_last_versions, get_changes_tooltip} from './util.js';
 import Tooltip from './common/tooltip.js';
 import {Modal} from './common/modals.js';
 import zurl from '../../util/url.js';
@@ -82,6 +82,7 @@ class Overview extends Pure_component {
                   </React.Fragment>
                 }
                 <Tls_warning show={this.state.tls_warning}/>
+                <Whitelist_warning/>
                 <Warnings warnings={this.state.warnings}/>
               </div>
               <div className="proxies nav_header">
@@ -155,16 +156,9 @@ class Upgrade extends Pure_component {
             this.setState({upgrade_error}));
     }
     upgrade = ()=>{ $('#upgrade_modal').modal(); };
-    new_versions = ()=>{
-        const ver_cur = this.state.version;
-        if (!ver_cur || !this.state.ver_last)
-            return [];
-        const changelog = this.state.ver_last.versions
-            .filter(v=>semver.lt(ver_cur, v.ver));
-        return changelog;
-    };
     render(){
-        const {upgrading, upgrade_error, ver_last, ver_node} = this.state;
+        const {upgrading, upgrade_error, ver_last, ver_node,
+            version} = this.state;
         if (!ver_last)
             return null;
         const is_upgradable = ver_last && ver_last.newer;
@@ -174,16 +168,8 @@ class Upgrade extends Pure_component {
             return null;
         const disabled = upgrading || upgrade_error || !ver_node.satisfied &&
             !electron;
-        const versions = this.new_versions();
-        const changes = versions.reduce((acc, ver)=>{
-            return acc.concat(ver.changes);
-        }, []);
-        let tooltip = '';
-        if (changes.length)
-        {
-            const list = changes.map(c=>`<li>${c.text}</li>`).join('\n');
-            tooltip = `Changes: <ul>${list}</ul>`;
-        }
+        const {versions, changes} = get_last_versions(version, ver_last);
+        const tooltip = get_changes_tooltip(changes);
         const major = versions.some(v=>v.type=='dev');
         const upgrade_type = major ? 'major' : 'minor';
         return <Warning tooltip={tooltip} id={this.state.ver_last.version}>
@@ -237,5 +223,33 @@ class Upgrade_warning extends Pure_component {
             </Warning>;
     }
 }
+
+const Whitelist_warning = withRouter(
+class Whitelist_warning extends Pure_component {
+    state = {};
+    componentDidMount(){
+        this.setdb_on('ws.not_whitelisted', details=>
+            this.setState({not_whitelisted: details}));
+    }
+    on_click(){
+        const {type, port} = this.state.not_whitelisted;
+        const path = type=='proxy' ? `/proxy/${port}/general` : '/settings';
+        this.props.history.push({pathname: path});
+    }
+    render(){
+        const {not_whitelisted} = this.state;
+        if (!not_whitelisted)
+            return null;
+        return <Warning id="not_whitelisted_warning">
+              <span>
+                <strong><T>Security issues found. Proxy Manager accepts
+                connections from all the IPs</T></strong>{' '}
+                <T>Click here to</T>{' '}
+                <a className="link" onClick={this.on_click.bind(this)}><T>see
+                  whitelisted IPs.</T></a>
+              </span>
+            </Warning>;
+    }
+});
 
 export default Overview;

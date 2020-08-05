@@ -1032,14 +1032,15 @@ class Mux {
             if (this.streams.delete(vfd))
             {
                 zerr.info(`${this.ws}: vfd ${vfd} closed`);
-                if (this.ws.zc)
-                    zcounter.inc_level(`level_${this.ws.zc}_mux_vfd`, -1);
+                let zc = this.ws.zc;
+                if (zc)
+                    zcounter.inc_level(`level_${zc}_mux_vfd`, -1, 'sum');
             }
         });
         this.streams.set(vfd, stream);
         zerr.info(`${this.ws}: vfd ${vfd} open`);
         if (this.ws.zc)
-            zcounter.inc_level(`level_${this.ws.zc}_mux_vfd`, 1);
+            zcounter.inc_level(`level_${this.ws.zc}_mux_vfd`, 1, 'sum');
         return stream;
     }
     open_ack(vfd, opt={}){
@@ -1250,14 +1251,15 @@ class Mux {
                 return;
             if (zerr.is.info())
                 zerr.info(`${this.ws}: vfd ${vfd} closed`);
-            if (this.ws.zc)
-                zcounter.inc_level(`level_${this.ws.zc}_mux_ack_vfd`, -1);
+            let zc = this.ws.zc;
+            if (zc)
+                zcounter.inc_level(`level_${zc}_mux_ack_vfd`, -1, 'sum');
         });
         this.streams.set(vfd, stream);
         if (zerr.is.info())
             zerr.info(`${this.ws}: vfd ${vfd} open`);
         if (this.ws.zc)
-            zcounter.inc_level(`level_${this.ws.zc}_mux_ack_vfd`, 1);
+            zcounter.inc_level(`level_${this.ws.zc}_mux_ack_vfd`, 1, 'sum');
         return stream;
     }
     close(vfd){

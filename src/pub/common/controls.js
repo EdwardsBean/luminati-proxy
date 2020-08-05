@@ -19,6 +19,8 @@ import {T} from './i18n.js';
 import {Ext_tooltip, Loader} from '../common.js';
 import Zone_description from './zone_desc.js';
 import {Modal_dialog} from './modals.js';
+import Toggle_on_off from './toggle_on_off.js';
+import 'react-bootstrap-typeahead/css/Typeahead.css';
 const ANY_IP = '0.0.0.0/0';
 
 export class Pins extends Pure_component {
@@ -349,17 +351,14 @@ export class Select_multiple extends Pure_component {
 }
 
 export class Yes_no extends Pure_component {
-    options = t=>{
-        return this.props.default ? [
-            {key: 'Yes (default)', value: true},
-            {key: 'No', value: false}
-        ] : [
-            {key: 'No (default)', value: false},
-            {key: 'Yes', value: true}
-        ];
+    toggle_active = ()=>{
+        this.props.on_change_wrapper(!this.props.val);
     };
     render(){
-        return <T>{t=><Select {...this.props} data={this.options(t)}/>}</T>;
+        return <Toggle_on_off
+            val={this.props.val}
+            on_click={this.toggle_active}
+            disabled={this.props.disabled}/>;
     }
 }
 
@@ -501,11 +500,30 @@ export const Textarea = props=>{
           onChange={e=>props.on_change_wrapper(e.target.value)}/>;
 };
 
-export const Typeahead_wrapper = props=>
-    <Typeahead id={props.id} options={props.data} maxResults={10}
-      minLength={1} disabled={props.disabled} selectHintOnEnter
-      onChange={props.on_change_wrapper} selected={props.val}
-      onInputChange={props.on_input_change} filterBy={props.filter_by}/>;
+export const Typeahead_wrapper = props=>{
+    const translate = (t, data)=>{
+        if (typeof data == 'string')
+            return t(data);
+        let _d = data.map(d=>typeof d == 'string' ?
+            t(d) : Object.assign({}, d, {label: t(d.label)}));
+        return _d;
+    };
+    const on_change_wrapper = val=>props.on_change_wrapper(
+        typeof val == 'string' ? val : val.length ? val[0].id : '');
+    const get_selected = (t, val)=>{
+        const _val = props.data.find(d=>(d.id||d)==val);
+        if (!_val)
+            return [];
+        return translate(t, typeof _val == 'string' ? _val : [_val]);
+    };
+    return <T>{t=><Typeahead id={props.id} options={translate(t, props.data)}
+          maxResults={10} disabled={props.disabled} selectHintOnEnter
+          onChange={on_change_wrapper} selected={get_selected(t, props.val)}
+          onInputChange={props.on_input_change} filterBy={props.filter_by}
+          clearButton placeholder={t(props.placeholder)}
+          emptyLabel={t('No matched found.')}
+          paginationText={t('Display additional results...')}/>}</T>;
+};
 
 export const Select = props=>{
     const update = val=>{
@@ -519,7 +537,8 @@ export const Select = props=>{
     const conf = (props.data||[]).find(c=>c.value==props.val);
     return <Tooltip key={props.val} title={conf&&conf.tooltip||''}>
           <T>{t=><select value={''+props.val}
-            onChange={e=>update(e.target.value)} disabled={props.disabled}>
+            onChange={e=>update(e.target.value)}
+            disabled={props.disabled}>
             {(props.data||[]).map((c, i)=>
               <option key={i} value={c.value !== undefined ? c.value : c}>
                 {t(c.key||c)}
@@ -565,8 +584,10 @@ class Select_zone extends Pure_component {
             _this.setState({refreshing_zones: true});
             const result = yield window.fetch('/api/refresh_zones',
                 {method: 'POST'});
-            if (result.status!=200)
+            if (result.status==400)
                 return _this.props.history.push({pathname: '/login'});
+            if (result.status==502)
+                return;
             const zones = yield ajax.json({url: '/api/zones'});
             _this.setState({refreshing_zones: false});
             setdb.set('ws.zones', zones);

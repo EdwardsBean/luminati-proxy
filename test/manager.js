@@ -1,6 +1,5 @@
 // LICENSE_CODE ZON ISC
 'use strict'; /*jslint node:true, mocha:true*/
-const _ = require('lodash');
 const nock = require('nock');
 const fs = require('fs');
 const os = require('os');
@@ -17,6 +16,7 @@ sinon.stub(cities, 'ensure_data', ()=>null);
 sinon.stub(process, 'exit');
 const logger = require('../lib/logger.js');
 const etask = require('../util/etask.js');
+const zutil = require('../util/util.js');
 const pkg = require('../package.json');
 const qw = require('../util/string.js').qw;
 const user_agent = require('../util/user_agent.js');
@@ -181,7 +181,6 @@ describe('manager', ()=>{
         sandbox = sinon.sandbox.create();
         sandbox.stub(os, 'cpus').returns([1, 1]);
         nock(api_base).get('/').times(2).reply(200, {});
-        nock(api_base).post('/lpm/update_stats').query(true).reply(200, {});
         nock(api_base).get('/lpm/server_conf').query(true).reply(200, {});
     });
     afterEach('after manager 2', ()=>{
@@ -226,7 +225,7 @@ describe('manager', ()=>{
                 nock(api_base).get('/cp/lum_local_conf')
                     .query({customer: 'testc1', proxy: pkg.version})
                     .reply(200, {_defaults});
-                t(name, _.set(config, 'cli.customer', 'testc1'), expected);
+                t(name, zutil.set(config, 'cli.customer', 'testc1'), expected);
             };
             t2('from defaults', {
                 config: {_defaults: {zone: 'foo'}, proxies: [simple_proxy]},
@@ -235,10 +234,10 @@ describe('manager', ()=>{
             t2('keep default', {
                 config: {_defaults: {zone: 'gen'}, proxies: [simple_proxy]},
             }, [Object.assign({zone: 'gen'}, simple_proxy)]);
-            t2('empty zone should be overriden by default', {config: {
+            /* t2('empty zone should be overriden by default', {config: {
                 _defaults: {},
                 proxies: [Object.assign({zone: ''}, simple_proxy)],
-            }}, [{zone: 'static'}]);
+            }}, [{zone: 'static'}]);*/
         });
         describe('args as default params for proxy ports', ()=>{
             it('should use proxy from args', etask._fn(function*(_this){
@@ -741,5 +740,25 @@ describe('manager', ()=>{
         t('should not run migrations if config does not exist', false);
         t('should not run migrations if config exists and version is new',
             false, {_defaults: {version: '1.120.0'}});
+    });
+    describe('stop', ()=>{
+        afterEach(()=>{ app = null; });
+        let t = name=>it(name, etask._fn(function*(_this){
+            const proxies = [{port: 24000, multiply: 5}];
+            let spies = [];
+            app = yield app_with_proxies(proxies);
+            Object.values(app.manager.proxy_ports).forEach(p=>{
+                const spy = sinon.spy();
+                const _stop_port = p.stop_port.bind(p);
+                p.stop_port = ()=>{
+                    spy();
+                    _stop_port();
+                };
+                spies.push(spy);
+            });
+            yield app.manager.stop();
+            spies.forEach(s=>sinon.assert.calledOnce(s));
+        }));
+        t('stop multiplied ports once');
     });
 });

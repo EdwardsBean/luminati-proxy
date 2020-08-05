@@ -114,25 +114,25 @@ const Key_cell = ({title, warning, row_key})=>{
           </Cell>
           {warning &&
             <span onClick={e=>e.stopPropagation()}>
-            <React_tooltip id="ssl_warn" type="info" effect="solid"
-              delayHide={100} delayShow={0} delayUpdate={500}
-              offset={{top: -10}}>
-              <div>
-                Some of your proxy ports don't have SSL analyzing enabled and
-                there are connections on HTTPS protocol detected.
-              </div>
-              <div style={{marginTop: 10}}>
-                <a onClick={enable_ssl_click} className="link">
-                  Enable SSL analyzing
-                </a>
-                <span>
-                  to see {name} and other information about requests
-                </span>
-              </div>
-            </React_tooltip>
-            <span data-tip="React-tooltip" data-for="ssl_warn">
-              <div className="ic_warning"/>
-            </span>
+              <React_tooltip id="ssl_warn" type="info" effect="solid"
+                delayHide={100} delayShow={0} delayUpdate={500}
+                offset={{top: -10}}>
+                <div>
+                  Some of your proxy ports don't have SSL analyzing enabled and
+                  there are connections on HTTPS protocol detected.
+                </div>
+                <div style={{marginTop: 10}}>
+                  <a onClick={enable_ssl_click} className="link">
+                    Enable SSL analyzing
+                  </a>
+                  <span>
+                    to see {name} and other information about requests
+                  </span>
+                </div>
+              </React_tooltip>
+              <span data-tip="React-tooltip" data-for="ssl_warn">
+                <div className="ic_warning"/>
+              </span>
             </span>
           }
         </td>;
@@ -150,8 +150,8 @@ const Cell = ({row_key, children})=>{
         </Tooltip>;
 };
 
-const Stat_table = with_resizable_cols([{id: 'key'}, {id: 'out_bw'},
-    {id: 'in_bw'}, {id: 'reqs'}],
+const Stat_table = with_resizable_cols([{id: 'key'}, {id: 'bw'},
+    {id: 'bypass_bw'}, {id: 'reqs'}],
 class Stat_table extends Pure_component {
     state = {sorting: {col: 0, dir: 1}};
     sort = col=>{
@@ -183,10 +183,12 @@ const Header_container = ({title, cols, sorting, sort, tooltip})=>
           <tr>
             <Header sort={sort} id={0} label={title} sorting={sorting}
               tooltip={tooltip}/>
-            <Header sort={sort} id={1} label="BW up" sorting={sorting}
-              tooltip="Outgoing bandwidth"/>
-            <Header sort={sort} id={2} label="BW down" sorting={sorting}
-              tooltip="Incoming bandwidth"/>
+            <Header sort={sort} id={1} label="Total BW" sorting={sorting}
+              tooltip="Total bandwith sent through Proxy Manager"/>
+            <Header sort={sort} id={2} label="Saved BW" sorting={sorting}
+              tooltip="Saved bandwidth represents the traffic sent through
+                your local IP or external proxy. Go to the Rules tab
+                to configure bandwidth saving rules"/>
             <Header sort={sort} id={3} label="Requests" sorting={sorting}
               tooltip="Number of sent requests"/>
           </tr>
@@ -249,8 +251,16 @@ const Row = withRouter(class Row extends Pure_component {
         const {stat, row_key, warning} = this.props;
         return <tr onClick={this.click}>
               <Key_cell row_key={row_key} title={stat.key} warning={warning}/>
-              <td><Tooltip_bytes chrome_style bytes={stat.out_bw}/></td>
-              <td><Tooltip_bytes chrome_style bytes={stat.in_bw}/></td>
+              <td>
+                <Tooltip_bytes
+                  chrome_style
+                  bytes_in={stat.in_bw}
+                  bytes_out={stat.out_bw}
+                  bytes={stat.in_bw+stat.out_bw}/>
+              </td>
+              <td>
+                <Tooltip_bytes bytes={stat.bypass_bw} cost={stat.bypass_cost}/>
+              </td>
               <td><Cell>{stat.reqs||'—'}</Cell></td>
             </tr>;
     }
