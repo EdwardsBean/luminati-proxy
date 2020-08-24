@@ -6,7 +6,6 @@ import $ from 'jquery';
 import _ from 'lodash';
 import setdb from '../../../util/setdb.js';
 import ajax from '../../../util/ajax.js';
-import zurl from '../../../util/url.js';
 import {Modal} from '../common/modals.js';
 import {report_exception} from '../util.js';
 import {Infinite_chrome_table} from '../chrome_widgets.js';
@@ -150,11 +149,11 @@ export default class Alloc_modal extends Pure_component {
             });
             _this.loading(true);
             const data = {zone: _this.props.zone};
-            const url = '/api/refresh_ips';
             if (_this.props.type=='ips')
-                data.ips = vals.map(zurl.ip2num).join(' ');
+                data.ips = vals;
             else
                 data.vips = vals;
+            const url = '/api/refresh_ips';
             const res = yield ajax.json({method: 'POST', url, data});
             if (res.error || !res.ips && !res.vips)
             {

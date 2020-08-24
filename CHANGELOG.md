@@ -1,5 +1,71 @@
 Luminati Proxy manager - Change Log
 
+## 1.195.444 Stable
+- :sparkles: Stability improvements
+
+## 1.195.277 Stable
+- :sparkles: Performance optimizations: fixed crashing workers
+
+## 1.195.206 Stable
+- :star: Accepting --insecure-http-parser to ignore HTTP parsing errors
+
+## 1.195.51 Stable
+- :sparkles: UI improvement: changed multiplied ports to collapsible/expandable
+- :star: Added more logging to worker.js crashes
+- :bug: Fixed the endpoint for banning IPs globally
+
+## 1.194.952 Stable
+- :star: Improved logging and performance on multi CPUs machines
+
+## 1.194.798 Stable
+- :star: Performance optimizations
+
+## 1.194.462 Stable
+- :star: Increased the max size of http headers
+- :sparkles: Added icons to navigate and back button
+
+## 1.194.438 Stable
+- :bug: Fix crashing UI when choosing Static Residential zone
+- :star: Improved keeping the same IP over time
+
+## 1.194.365 Stable
+- :star: Added support for the authorization per request
+- :sparkles: Fixed categories in the dropdown UI
+
+## 1.194.314 Stable
+- :bug: Fixed x-lpm-port response headers for debugging
+- :sparkles: Added categories to dropdown UI
+
+## 1.194.195 Stable
+- :bug: Fixed keeping the same IP over the longer time
+- :bug: Fixed refreshing sessions
+
+## 1.194.180 Stable
+- :sparkles: Added filtering by port
+
+## 1.194.126 Stable
+- :star: Updated node and npm versions in Docker file
+- :sparkles: Added zone validation in proxy ports when zones config changes
+- :sparkles: Updated action icons in the UI
+
+## 1.194.9 Stable
+- :bug: Fixed refreshing gIPs
+
+## 1.193.847 Stable
+- :sparkles: Introduced storing config changes on Luminati's servers
+- :sparkles: Updated node and npm versions in installation script
+
+## 1.193.647 Stable
+- :sparkles: Increased limit for the string length in proxy port configuration
+- :bug: Fixed applying whitelist IPs from general settings
+
+## 1.193.514 Stable
+- :sparkles: New design of the UI
+- :sparkles: Added x-lpm-port header witht the final port number
+
+## 1.193.343 Stable
+- :sparkles: Refactored update general settings and update proxy port API to update only provided fields
+
 ## 1.192.600 Stable
 - :sparkles: Fixed balancing super proxies when passing explicit usernames
 

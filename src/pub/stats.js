@@ -5,17 +5,17 @@ import {withRouter} from 'react-router-dom';
 import {status_codes} from './util.js';
 import ajax from '../../util/ajax.js';
 import etask from '../../util/etask.js';
-import {Tooltip_bytes, Loader_small} from './common.js';
+import {Tooltip_bytes, Loader_small, Toolbar_button} from './common.js';
 import Tooltip from './common/tooltip.js';
 import Pure_component from '/www/util/pub/pure_component.js';
 import setdb from '../../util/setdb.js';
-import {Toolbar_button, Devider, Sort_icon,
-    with_resizable_cols, Toolbar_container,
-    Toolbar_row} from './chrome_widgets.js';
+import {Sort_icon} from './chrome_widgets.js';
 import {T} from './common/i18n.js';
 import React_tooltip from 'react-tooltip';
 
-class Stats extends Pure_component {
+export const Logs_context = React.createContext(true);
+
+export class Stats extends Pure_component {
     state = {stats: {}, toggling: false};
     componentDidMount(){
         this.setdb_on('head.recent_stats', stats=>{
@@ -45,9 +45,7 @@ class Stats extends Pure_component {
         this.setState({toggling: true});
         this.etask(function*(){
             this.on('finally', ()=>_this.setState({toggling: false}));
-            const settings = Object.assign({}, setdb.get('head.settings'));
-            settings.request_stats = val;
-            yield _this.save_settings(settings);
+            yield _this.save_settings({request_stats: val});
         });
     };
     render(){
@@ -58,30 +56,34 @@ class Stats extends Pure_component {
               disabled={toggling}/>;
         }
         return <div className="stats_wrapper">
-              <div className="chrome stats_panel">
-                <div className="main_panel">
-                  {!request_stats &&
-                    <Loader_small show loading_msg="Loading..."/>
-                  }
-                  {request_stats && <React.Fragment>
-                    <Toolbar stats={stats}
-                      disable_stats={()=>this.toggle_stats(false)}/>
-                    <Stat_table stats={stats} tooltip="Status code"
-                      style={{flex: 1, overflowY: 'auto'}}
-                      row_key="status_code" logs="code" title="Code"/>
-                    <Stat_table stats={stats} tooltip="Domain name"
-                      style={{flex: 1, overflowY: 'auto'}}
-                      row_key="hostname" logs="domain" title="Domain"/>
-                    <Stat_table stats={stats} tooltip="Protocol"
-                      style={{flex: 'none', overflowY: 'auto'}}
-                      ssl_warning={stats.ssl_warning} row_key="protocol"
-                      logs="protocol" title="Protocol"/>
-                  </React.Fragment>}
-                </div>
+              <div className="stats_panel cp_panel vbox">
+                <Header_panel stats={stats}
+                  disable_stats={()=>this.toggle_stats(false)}/>
+                {!request_stats &&
+                  <Loader_small show loading_msg="Loading..."/>
+                }
+                {request_stats && <React.Fragment>
+                  <Stat_table stats={stats} tooltip="Status code"
+                    style={{flex: 1, overflowY: 'auto'}}
+                    row_key="status_code" logs="code" title="Code"/>
+                  <Stat_table stats={stats} tooltip="Domain name"
+                    style={{flex: 1, overflowY: 'auto'}}
+                    row_key="hostname" logs="domain" title="Domain"/>
+                  <Stat_table stats={stats} tooltip="Protocol"
+                    style={{flex: 'none', overflowY: 'auto'}}
+                    ssl_warning={stats.ssl_warning} row_key="protocol"
+                    logs="protocol" title="Protocol"/>
+                </React.Fragment>}
               </div>
             </div>;
     }
 }
+
+const Header_panel = props=>
+  <div className="cp_panel_header">
+    <h2>Statistics</h2>
+    <Toolbar stats={props.stats} disable_stats={props.disable_stats}/>
+  </div>;
 
 const Stats_off_btn = props=>
   <Tooltip title="Recent stats are disabled. Click here to turn it on again"
@@ -150,8 +152,6 @@ const Cell = ({row_key, children})=>{
         </Tooltip>;
 };
 
-const Stat_table = with_resizable_cols([{id: 'key'}, {id: 'bw'},
-    {id: 'bypass_bw'}, {id: 'reqs'}],
 class Stat_table extends Pure_component {
     state = {sorting: {col: 0, dir: 1}};
     sort = col=>{
@@ -160,8 +160,10 @@ class Stat_table extends Pure_component {
         this.setState({sorting: {dir, col}});
     };
     render(){
-        const {title, stats, row_key, logs, ssl_warning, cols} = this.props;
+        const {title, stats, row_key, logs, ssl_warning} = this.props;
         const cur_stats = stats[row_key]||[];
+        const cols = [{id: 'key'}, {id: 'bw'}, {id: 'bypass_bw'},
+            {id: 'reqs'}];
         return <div className="tables_container vbox">
               <Header_container title={title} cols={cols}
                 tooltip={this.props.tooltip}
@@ -171,11 +173,11 @@ class Stat_table extends Pure_component {
                 sorting={this.state.sorting}/>
             </div>;
     }
-});
+}
 
 const Header_container = ({title, cols, sorting, sort, tooltip})=>
     <div className="header_container">
-      <table>
+      <table className="chrome_table">
         <colgroup>
           {(cols||[]).map((c, idx)=><col key={idx} style={{width: c.width}}/>)}
         </colgroup>
@@ -219,7 +221,7 @@ const Data_container = ({stats, row_key, logs, ssl_warning, cols, sorting})=>{
         return sorting.dir==-1 ? res : -res;
     });
     return <div className="data_container">
-          <table>
+          <table className="chrome_table">
             <colgroup>
               {(cols||[]).map((c, idx)=>
                 <col key={idx} style={{width: c.width}}/>
@@ -249,7 +251,8 @@ const Row = withRouter(class Row extends Pure_component {
     };
     render(){
         const {stat, row_key, warning} = this.props;
-        return <tr onClick={this.click}>
+        return <tr className={!this.context ? 'disabled' : ''}
+                onClick={this.context ? this.click : null}>
               <Key_cell row_key={row_key} title={stat.key} warning={warning}/>
               <td>
                 <Tooltip_bytes
@@ -265,6 +268,7 @@ const Row = withRouter(class Row extends Pure_component {
             </tr>;
     }
 });
+Row.WrappedComponent.contextType = Logs_context;
 
 class Toolbar extends Pure_component {
     clear = ()=>{
@@ -274,17 +278,14 @@ class Toolbar extends Pure_component {
         });
     };
     render(){
-        return <Toolbar_container>
-              <Toolbar_row>
-                <Toolbar_button id="clear" tooltip="Clear"
-                  on_click={this.clear}/>
-                <Devider/>
-                <Success_ratio total={this.props.stats.total}
-                  success={this.props.stats.success}/>
-                <Toolbar_button id="close_btn" tooltip="Disable"
-                  placement="left" on_click={this.props.disable_stats}/>
-              </Toolbar_row>
-            </Toolbar_container>;
+        return <div className="toolbar">
+              <Success_ratio total={this.props.stats.total}
+                success={this.props.stats.success}/>
+              <Toolbar_button id="remove" tooltip="Clear"
+                on_click={this.clear}/>
+              <Toolbar_button id="arrow_down" tooltip="Disable"
+                placement="left" on_click={this.props.disable_stats}/>
+            </div>;
     }
 }
 
@@ -311,5 +312,3 @@ const Success_ratio = ({total=0, success=0})=>{
           </div>
         </div>;
 };
-
-export default Stats;

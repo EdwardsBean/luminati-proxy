@@ -2,9 +2,10 @@
 'use strict'; /*jslint react:true, es6:true*/
 import React from 'react';
 import {withRouter} from 'react-router-dom';
+import classNames from 'classnames';
 import Proxies from './proxies.js';
-import Stats from './stats.js';
-import Har_viewer from './har_viewer';
+import {Logs_context, Stats} from './stats.js';
+import Har_viewer from './har_viewer.js';
 import Pure_component from '/www/util/pub/pure_component.js';
 import $ from 'jquery';
 import {T} from './common/i18n.js';
@@ -44,21 +45,15 @@ class Overview extends Pure_component {
     toggle_logs = val=>{
         const _this = this;
         this.setState({show_logs: null});
-        this.etask(function*(){
-            const settings = Object.assign({}, setdb.get('head.settings'));
-            settings.logs = val;
-            yield _this.save_settings(settings);
-        });
+        this.etask(function*(){ yield _this.save_settings({logs: val}); });
     };
     set_sync_config = val=>{
         const _this = this;
         this.etask(function*(){
             this.finally(()=>$('#applying_config').modal('hide'));
-            const settings = Object.assign({}, setdb.get('head.settings'));
-            settings.sync_config = val;
             if (val)
                 $('#applying_config').modal();
-            yield _this.save_settings(settings);
+            yield _this.save_settings({sync_config: val});
             if (!val)
                 return;
             const proxies = yield ajax.json({url: '/api/proxies_running'});
@@ -67,12 +62,8 @@ class Overview extends Pure_component {
     };
     render(){
         const {show_logs} = this.state;
-        const master_port = this.props.match.params.master_port;
         const panels_style = {maxHeight: show_logs ? '50vh' : undefined};
-        const title = master_port ?
-            <span>
-              <T>Overview of multiplied proxy port</T> - {master_port}
-            </span> : <T>Overview</T>;
+        const title = <T>Overview</T>;
         return <div className="overview_page">
               <div className="warnings">
                 {!this.state.embedded &&
@@ -87,18 +78,21 @@ class Overview extends Pure_component {
               </div>
               <div className="proxies nav_header">
                 <h3>{title}</h3>
+                <Toolbar/>
               </div>
               <div className="panels" style={panels_style}>
                 <div className="proxies proxies_wrapper">
-                  <Proxies master_port={master_port}/>
+                  <Proxies/>
                 </div>
-                <Stats/>
+                <Logs_context.Provider value={!!show_logs}>
+                  <Stats/>
+                </Logs_context.Provider>
               </div>
               {show_logs===null &&
                 <Loader_small show loading_msg="Loading..."/>}
               {show_logs &&
                 <div className="logs_wrapper">
-                  <Har_viewer master_port={master_port}/>
+                  <Har_viewer/>
                 </div>}
               {show_logs===false &&
                 <Logs_off_btn turn_on={()=>this.toggle_logs(1000)}/>}
@@ -120,6 +114,44 @@ class Overview extends Pure_component {
             </div>;
     }
 }
+
+const Toolbar = ()=>
+  <div className="toolbar">
+    <Nav_icon id='how_to' link_to='/howto'
+      tooltip='How to use the Proxy Manager'/>
+    <Nav_icon id='general_settings' link_to='/settings'
+      tooltip='General settings'/>
+    <Add_proxy_btn/>
+  </div>;
+
+const Add_proxy_btn = ()=>{
+  const open_modal = ()=>$('#add_new_proxy_modal').modal('show');
+  return <T>{t=>
+      <Tooltip title={t('Add new port')}>
+        <button onClick={open_modal}
+          className="btn btn_lpm btn_lpm_primary toolbar_item">
+          Add new port
+        </button>
+      </Tooltip>
+    }</T>;
+};
+
+const Nav_icon = withRouter(props=>{
+  const classes = classNames('toolbar_icon', 'cp_icon ', props.id);
+  const navigate_to = path=>{
+      props.history.push({pathname: path});
+  };
+  return <T>{t=>
+      <Tooltip title={t(props.tooltip)}>
+          <div className="toolbar_item">
+            <div className='toolbar_icon_bg'>
+            <div className={classes}
+              onClick={()=>navigate_to(props.link_to)}/>
+            </div>
+          </div>
+      </Tooltip>
+    }</T>;
+});
 
 const Logs_off_btn = props=>
   <Tooltip title="Logs are disabled. Click here to turn it on again">

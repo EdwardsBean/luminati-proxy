@@ -7,7 +7,7 @@ if (!is_node)
     define = self.define;
 else
     define = require('./require_node.js').define(module, '../');
-define([], function(){
+define(['/util/util.js', '/util/array.js'], function(zutil, zarray){
 var E = {};
 var assign = Object.assign;
 
@@ -53,20 +53,22 @@ E.to_arr = function(data, opt){
         else
         {
             // value not escaped with quote
-            while (c && c!=field && c!=line &&
-                (!opt.trim || c!=' ' && c!='\t' && c!='\r'))
+            while (c && c!=field && c!=line)
             {
                 value += c;
                 c = data[++i];
             }
         }
+        if (opt.trim)
+        {
+            value = value.trim();
+            if (c=='\r')
+                c = data[++i];
+        }
         // add the value to the array
         if (array.length<=row)
             array.push([]);
         array[row].push(value);
-        // skip whitespaces
-        while (opt.trim && (c==' ' || c=='\t' || c=='\r'))
-            c = data[++i];
         // go to the next row or column
         if (c==field);
         else if (c==line)
@@ -101,35 +103,132 @@ E.to_obj = function(data, opt){
     return result;
 };
 
-E.escape_field = function(s, opt){
+function is_complex(v){
+    return v && typeof v=='object' && (!Array.isArray(v) ||
+        v.some(function(e){ return typeof e=='object'; }));
+}
+
+E.escape_field = function(v, opt){
     // opt not fully supported
-    if (s==null && opt && opt.null_to_empty)
+    if (v==null && opt && opt.null_to_empty)
         return '';
-    if (typeof s=='object' && (!Array.isArray(s) ||
-        s.some(function(e){ return typeof e=='object'; })))
+    if (is_complex(v))
+        v = JSON.stringify(v);
+    else
+        v = ''+v;
+    if (!/["'\n,]/.test(v))
+        return v;
+    return '"'+v.replace(/"/g, '""')+'"';
+};
+
+function flatten(obj, opt, keys){
+    var key_set = [], k;
+    for (var i = 0; i < keys.length; i++)
     {
-        s = JSON.stringify(s);
+        k = keys[i];
+        if (is_complex(obj[k]))
+        {
+            _get_flatenned_keys(obj[k], opt)
+                .forEach(function(h){ key_set.push(k+opt.splitter+h); });
+        }
+        else
+            key_set.push(k);
+    }
+    return zarray.unique(key_set);
+}
+
+function _get_flatenned_keys(obj, opt, keys){
+    keys = keys || Object.keys(obj);
+    if (Array.isArray(obj))
+    {
+        var key_set = [];
+        for (var i = 0; i < obj.length; i++)
+        {
+            if (!zutil.is_object(obj[i]))
+                continue;
+            flatten(obj[i], opt, Object.keys(obj[i])).forEach(
+                function(el){ key_set.push(el); });
+        }
+        return zarray.unique(key_set).reduce(function(_keys, k){
+            for (var j = 0; j < obj.length; j++)
+                _keys.push(j+opt.splitter+k);
+            return _keys;
+        }, []);
+    }
+    return flatten(obj, opt, keys);
+}
+
+function get_flatenned_keys(dataset, opt, keys){
+    var keymap = {}, i;
+    for (i = 0; i<dataset.length; i++)
+    {
+        var _keys = _get_flatenned_keys(dataset[i], opt, keys);
+        for (var j = 0; j<_keys.length; j++)
+            keymap[_keys[j]] = true;
+    }
+    var arr = Object.keys(keymap);
+    // XXX josh/gabriel: this should be grouping same prefix keys, not sorting
+    arr.sort();
+    // Removes keys where value is considered non-complex due to being an empty
+    // array but, in reality, it is complex in other entries
+    for (i = 0; i < arr.length-1; i++)
+    {
+        var k1 = arr[i], k2 = arr[i+1];
+        if (!k2.startsWith(k1+opt.splitter))
+            continue;
+        if (dataset.every(function(d){
+            var v = get_value(d, k1, opt);
+            return is_complex(v) || Array.isArray(v) && !v.length;
+        }))
+        {
+            arr = arr.filter(function(k){ return k!=k1; });
+        }
+    }
+    return arr;
+}
+
+function generate_keys(dataset, opt){
+    var keys;
+    if (!opt.keys)
+        keys = Object.keys(dataset[0]);
+    else if (opt.keys=='auto')
+    {
+        var keymap = {};
+        for (var i = 0; i<dataset.length; i++)
+        {
+            for (var j = 0, fields = Object.keys(dataset[i]); j<fields.length;
+                j++)
+            {
+                keymap[fields[j]] = true;
+            }
+        }
+        keys = Object.keys(keymap);
     }
     else
-        s = ''+s;
-    if (!/["'\n,]/.test(s))
-        return s;
-    return '"'+s.replace(/"/g, '""')+'"';
-};
+        keys = opt.keys;
+    return opt.flatten ? get_flatenned_keys(dataset, opt, keys) : keys;
+}
+
+function get_value(obj, key, opt){
+    if (obj.hasOwnProperty(key))
+        return obj[key];
+    return key.split(opt.splitter).reduce(
+        function(acc, v){ return acc&&acc[v]; }, obj);
+}
 
 E.to_str = function(csv, opt){
     var s = '', i, j, a;
-    opt = assign({field: ',', quote: '"', line: '\n'}, opt);
+    opt = assign({field: ',', quote: '"', line: '\n', splitter: '$$'}, opt);
     var line = opt.line, field = opt.field;
     function line_to_str(vals){
-        var s = '';
-        for (var i=0; i<vals.length; i++)
-            s += (i ? field : '')+E.escape_field(vals[i], opt);
-        return s+line;
+        var _s = '';
+        for (var k=0; k<vals.length; k++)
+            _s += (k ? field : '')+E.escape_field(vals[k], opt);
+        return _s+line;
     }
-    if (!csv.length && !opt.keys)
+    if (!csv.length && (!opt.keys || opt.keys=='auto'))
         return '';
-    if (Array.isArray(csv[0]))
+    if (Array.isArray(csv[0]) && !opt.flatten)
     {
         if (opt.keys)
             s += line_to_str(opt.keys);
@@ -137,14 +236,24 @@ E.to_str = function(csv, opt){
             s += line_to_str(csv[i]);
         return s;
     }
-    var keys = opt.keys || Object.keys(csv[0]);
+    var keys = generate_keys(csv, opt);
     if (opt.print_keys===undefined || opt.print_keys)
-        s += line_to_str(keys);
+    {
+        s += line_to_str(keys.map(function(k){
+            var parts = k.split(opt.splitter);
+            return parts.map(function(p){
+                // indexes start at 1
+                if (Number.isFinite(+p))
+                    p = +p+1;
+                return p;
+            }).join('_');
+        }));
+    }
     for (i=0; i<csv.length; i++)
     {
         for (j=0, a=[]; j<keys.length; j++)
         {
-            var v = csv[i][keys[j]];
+            var v = get_value(csv[i], keys[j], opt);
             a.push(v===undefined ? '' : v);
         }
         s += line_to_str(a);

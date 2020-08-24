@@ -98,7 +98,6 @@ class Schema extends Pure_component {
               <Proxy_port_layer proxies={this.state.proxies}
                 form={this.state.form}/>
               <Layer id="lpm" class_names="port active">
-                <div className="icon"/>
                 <T>LPM</T>
               </Layer>
               <Layer no_btn id="port_numbers"><T>Port</T> 22225</Layer>
@@ -127,11 +126,11 @@ const Proxy_port_layer = ({proxies, form})=>{
         label = ' '+proxies[0].port;
     else
         label = ' '+proxies[0].port+' - '+proxies[proxies.length-1].port;
-    return <Layer no_btn id="port_numbers"><T>Proxy port</T>{label}</Layer>;
+    return <Layer no_btn id="port_numbers"><T>Port</T>{label}</Layer>;
 };
 
 const Layer = ({id, no_btn, no_arr, class_names, children})=>{
-    return <div className={classnames('layer', id, class_names)}>
+    return <div className={classnames('layer', id, class_names, {no_btn})}>
           <T>{t=>
             <Tooltip placement="bottom" title={tooltips(t)[id]}>
               <span>

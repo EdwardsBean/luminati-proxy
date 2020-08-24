@@ -204,6 +204,8 @@ E.is_hola_domain = function(domain){
 
 // XXX josh: move to email.js:is_valid
 E.is_valid_email = function(email, is_signup){
+    if (!email)
+        return false;
     var re = /^[a-z0-9_\-+*]+(?:\.[a-z0-9_\-+*]+)*@(.*)$/;
     var n = email.toLowerCase().match(re);
     if ((n&&is_signup&&email.split('@')[0].match(/\+/g)||[]).length>1)
@@ -228,7 +230,7 @@ E.is_email_need_sanitize = function(email){
         'yahoo.fr', 'yahoo.co.uk', 'yahoo.com.br', 'yahoo.co.in', 'yahoo.es',
         'yahoo.it', 'yahoo.de', 'yahoo.in', 'yahoo.ca', 'yahoo.com.au',
         'yahoo.co.jp', 'yahoo.com.ar', 'yahoo.com.mx', 'yahoo.co.id',
-        'yahoo.com.sg', 'protonmail.ch'];
+        'yahoo.com.sg', 'protonmail.ch', 'protonmail.com'];
     return valid_domains.indexOf(E.get_domain_email(email)) !== -1;
 };
 

@@ -11,6 +11,7 @@ import {Code, with_www_api} from './common.js';
 import {Nav_tabs, Nav_tab} from './common/nav_tabs.js';
 import {T} from './common/i18n.js';
 import Pure_component from '/www/util/pub/pure_component.js';
+import {Back_btn} from './proxy_edit/index.js';
 
 const Howto = withRouter(class Howto extends Pure_component {
     choose_click = option=>{
@@ -22,6 +23,7 @@ const Howto = withRouter(class Howto extends Pure_component {
         browser: 'using browser',
         proxy_tester: 'instantly from here',
     };
+    back_btn_click = ()=>this.props.history.push({pathname: '/overview'});
     render(){
         const option = this.props.match.params.option||'code';
         const cur_title = this.option_to_text[option];
@@ -32,26 +34,26 @@ const Howto = withRouter(class Howto extends Pure_component {
             Instructions = Code_instructions;
         else if (option=='proxy_tester')
             Instructions = Proxy_tester;
-        return <T>{t=><div className="howto vbox">
-              <div className="nav_header">
-                <h3>{t('How to use LPM')} {t(cur_title)}</h3>
+        return <T>{t=><div className="howto">
+            <div className="cp_panel vbox">
+              <div className="cp_panel_header">
+                <Back_btn click={this.back_btn_click}/>
+                <h2>{t('How to use LPM')} {t(cur_title)}</h2>
               </div>
-              <div className="howto_panel">
-                <div className="panel_inner vbox">
-                  <Nav_tabs set_tab={this.choose_click} cur_tab={option}>
-                    <Nav_tab id="code" title="Code"
-                      tooltip="Examples how to use LPM programmatically"/>
-                    <Nav_tab id="browser" title="Browser"
-                      tooltip="Examples how to integrate LPM with the
-                      browser"/>
-                    <Nav_tab id="proxy_tester" title="Web tester"
-                      tooltip="Send example requests from here"/>
-                  </Nav_tabs>
-                  <Instructions>{this.props.children}</Instructions>
-                </div>
-                {false && <Animated_instructions/>}
+              <div className="panel_inner vbox">
+                <Nav_tabs set_tab={this.choose_click} cur_tab={option}>
+                  <Nav_tab id="code" title="Code"
+                    tooltip="Examples how to use LPM programmatically"/>
+                  <Nav_tab id="browser" title="Browser"
+                    tooltip="Examples how to integrate LPM with the
+                    browser"/>
+                  <Nav_tab id="proxy_tester" title="Web tester"
+                    tooltip="Send example requests from here"/>
+                </Nav_tabs>
+                <Instructions>{this.props.children}</Instructions>
               </div>
-            </div>}</T>;
+              {false && <Animated_instructions/>}
+            </div></div>}</T>;
     }
 });
 

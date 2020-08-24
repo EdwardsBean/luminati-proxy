@@ -2,36 +2,34 @@
 .proxies {
     &.nav_header { padding: 0 15px 10px; }
     .proxies_panel {
-        height: 100%;
+        padding-bottom: 0;
     }
     .proxies_actions {
         visibility: hidden;
         display: grid;
         grid-template-columns: 25% 25% 25% 25%;
-        .action_icon.chrome_icon { width: 18px; }
-        .trash { grid-column: 1; }
+        .action_icon { width: 16px; height:16px; }
+        .remove { grid-column: 1; }
         .duplicate { grid-column: 2; }
         .refresh { grid-column: 3; }
         .browser { grid-column: 4; }
     }
-    .proxies_actions_3 {
+    .proxies_actions_local {
         visibility: hidden;
         display: grid;
         grid-template-columns: 33% 33% 33%;
-        .action_icon.chrome_icon { width: 18px; }
-        .trash { grid-column: 1; }
+        .action_icon { width: 16px; height:16px; }
+        .remove { grid-column: 1; }
         .duplicate { grid-column: 2; }
         .refresh { grid-column: 3; }
     }
-    .chrome_tr:hover {
-        .proxies_actions {
-            visibility: visible;
+    .port_cell {
+        &.master {
+            flex-direction: row;
+            display: flex;
         }
-        .proxies_actions_3 {
-            visibility: visible;
+        &.multiplied {
+            padding: 10px;
         }
     }
-}
-.proxies_panel {
-    .panel_container();
 }

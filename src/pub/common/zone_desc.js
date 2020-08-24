@@ -6,6 +6,7 @@ import Tooltip from './tooltip.js';
 import {get_static_country} from '../util.js';
 import {flag_with_title, any_flag} from '../common.js';
 import {T} from './i18n.js';
+import {get_plan_product, network_types} from './network_types.js';
 import '../css/zone_desc.less';
 
 export default class Zone_description extends Pure_component {
@@ -17,31 +18,6 @@ export default class Zone_description extends Pure_component {
             this.setState({zones, zone: zones.def});
         });
     }
-    network_types = {
-        static: {
-            label: 'Data center',
-            tooltip: 'Static IPs from various data centers located around '
-                +'the globe',
-        },
-        resident: {
-            label: 'Residential',
-            tooltip: 'P2P residential network. Millions of IPs from real '
-                +'devices',
-        },
-        custom: {
-            label: 'Custom',
-            tooltip: '3G and 4G network from real mobile devices',
-        },
-        static_res: {
-            label: 'Static residential',
-            tooltip: 'Static residential IPs',
-        },
-        unblocker: {
-            label: 'Unblocker',
-            tooltip: 'Clever proxy which automatically manages IPs, headers, '
-                +'and network',
-        },
-    };
     ips_types = {
         shared: 'Shared',
         dedicated: 'Exclusive / Unlimited domains',
@@ -64,12 +40,13 @@ export default class Zone_description extends Pure_component {
         let c = any_flag;
         if (static_country && static_country!='any' && static_country!='*')
             c = flag_with_title(static_country, static_country.toUpperCase());
+        const plan_type = get_plan_product(plan);
         return <T>{t=><div className="zone_settings">
               <ul className="bullets">
                 <Zone_bullet atr="Network type"
                   tip="The network accessible by this zone">
-                  <Tooltip title={t(this.network_types[plan.type].tooltip)}>
-                    {t(this.network_types[plan.type].label)}
+                  <Tooltip title={t(network_types[plan_type].tooltip)}>
+                    {t(network_types[plan_type].label)}
                   </Tooltip>
                 </Zone_bullet>
                 <Zone_bullet show={plan.ips_type!==undefined}

@@ -1,9 +1,6 @@
 // LICENSE_CODE ZON ISC
 'use strict'; /*jslint node:true, esnext:true*/
-let lpm_api_models;
-// need to have import from ZON because this file is used in Jakefile
-try { lpm_api_models = require('../../../www/lum/pub/faq/lpm_api_models.js'); }
-catch(e){ lpm_api_models = require('../www/lum/pub/faq/lpm_api_models.js'); }
+const lpm_api_models = require('./lpm_api_models.js');
 
 const prop_by_type = (props, type)=>
     Object.keys(props).filter(k=>props[k].type==type);
@@ -42,6 +39,7 @@ const conf = {
             'auto-upgrade': 'Enable auto upgrade',
             'start-upgrader': 'Install CRON process that checks upgrades',
             'stop-upgrader': 'Removes CRON process that checks upgrades',
+            'insecure-http-parser': 'Disables the strict checks',
         },
         alias: {
             help: ['h', '?'],

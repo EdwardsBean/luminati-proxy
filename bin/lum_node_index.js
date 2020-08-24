@@ -9,13 +9,15 @@ const ssl = require('../lib/ssl.js');
 const lpm_config = require('../util/lpm_config.js');
 const lpm_file = require('../util/lpm_file.js');
 const file = require('../util/file.js');
-const pm2 = require('pm2');
 const child_process = require('child_process');
 const path = require('path');
 const util_lib = require('../lib/util.js');
 const upgrader = require('./upgrader.js');
 const string = require('../util/string.js');
 const qw = string.qw;
+let pm2;
+try { pm2 = require('pm2'); }
+catch(e){ logger.warn('could not load pm2: daemon mode not supported'); }
 
 class Lum_node_index {
     constructor(argv){
@@ -167,9 +169,15 @@ class Lum_node_index {
     }
     create_child(opt={}){
         process.env.LUM_MAIN_CHILD = true;
+        const exec_argv = process.execArgv;
+        if (!lpm_config.is_win)
+            exec_argv.push('--max-http-header-size=80000');
+        if (this.argv.insecureHttpParser)
+            exec_argv.push('--insecure-http-parser');
         const child_opt = {
             stdio: 'inherit',
             env: process.env,
+            execArgv: exec_argv,
         };
         this.child = child_process.fork(path.resolve(__dirname, 'lum_node.js'),
             process.argv.slice(2), child_opt);
