@@ -1,5 +1,30 @@
 Luminati Proxy manager - Change Log
 
+## 1.198.139 Stable
+- :bug: Fixed TypeError causing initalization of a proxy port to fail
+
+## 1.198.94 Stable
+- :bug: Fixed banned ips being used for new requests
+
+## 1.197.33 Stable
+- :bug: Fixed double vertical scrollbars in proxy edit page
+- :star: Display modal when upgrading LPM from UI without root permissions
+- :star: UI improvements for Ban IP durations in Rules tab
+
+## 1.196.832 Stable
+- :bug: Fixed Waterfall rule, skip refreshing the session
+- :star: Performance improvements
+
+## 1.196.634 Stable
+- :bug: Added node version compatiblity check on startup
+
+## 1.196.424 Stable
+- :bug: Fixed crashing on Windows
+- :star: Request is canceled if all the IPs LPM is getting are banned
+
+## 1.195.934 Stable
+- :bug: Fixed unbanning IPs API
+
 ## 1.195.444 Stable
 - :sparkles: Stability improvements
 

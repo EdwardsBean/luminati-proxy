@@ -1,5 +1,91 @@
 [
     {
+        "ver": "1.198.139",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed TypeError causing initalization of a proxy port to fail"
+            }
+        ]
+    },
+    {
+        "ver": "1.198.94",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed banned ips being used for new requests"
+            }
+        ]
+    },
+    {
+        "ver": "1.197.33",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed double vertical scrollbars in proxy edit page"
+            },
+            {
+                "type": "star",
+                "text": "Display modal when upgrading LPM from UI without root permissions"
+            },
+            {
+                "type": "star",
+                "text": "UI improvements for Ban IP durations in Rules tab"
+            }
+        ]
+    },
+    {
+        "ver": "1.196.832",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed Waterfall rule, skip refreshing the session"
+            },
+            {
+                "type": "star",
+                "text": "Performance improvements"
+            }
+        ]
+    },
+    {
+        "ver": "1.196.634",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Added node version compatiblity check on startup"
+            }
+        ]
+    },
+    {
+        "ver": "1.196.424",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed crashing on Windows"
+            },
+            {
+                "type": "star",
+                "text": "Request is canceled if all the IPs LPM is getting are banned"
+            }
+        ]
+    },
+    {
+        "ver": "1.195.934",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed unbanning IPs API"
+            }
+        ]
+    },
+    {
         "ver": "1.195.444",
         "type": "stable",
         "changes": [

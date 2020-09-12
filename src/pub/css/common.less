@@ -569,6 +569,7 @@ input[type=url].error { border-color: @error_dark; }
     min-width: 113px;
     input { min-width: 0; }
     &.status { min-width: 130px; }
+    &.ban_action { min-width: 165px; }
 }
 ul.bullets {
     padding-left: 0;
@@ -1288,6 +1289,11 @@ span.icon_link {
     span { height: 17px; }
     &:hover {
         opacity: 1;
+    }
+    &.lock {
+        pointer-events: none;
+        opacity: 0.4;
+        cursor: default;
     }
 }
 .expandable {

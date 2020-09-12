@@ -18,7 +18,6 @@ const lpm_config = require('../util/lpm_config.js');
 const Server = require('../lib/server.js');
 const requester = require('../lib/requester.js');
 const Timeline = require('../lib/timeline.js');
-const Ip_cache = require('../lib/ip_cache.js');
 const Config = require('../lib/config.js');
 const lutil = require('../lib/util.js');
 const consts = require('../lib/consts.js');
@@ -846,24 +845,20 @@ describe('proxy', ()=>{
             describe('ban_ip', ()=>{
                 it('ban_ip', ()=>etask(function*(){
                     l = yield lum({rules: []});
-                    sinon.stub(l.rules, 'can_retry').returns(true);
-                    sinon.stub(l.rules, 'retry');
-                    const refresh_stub = sinon.stub(l.session_mgr,
-                        'refresh_sessions');
+                    sinon.stub(l.rules, 'can_retry').returns(false);
                     const add_stub = sinon.stub(l, 'banip');
                     const req = {ctx: {}};
                     const opt = {_res: {
                         hola_headers: {'x-luminati-ip': '1.2.3.4'}}};
-                    const r = l.rules.action(req, {}, {},
+                    const retried = l.rules.action(req, {}, {},
                         {action: {ban_ip: 1000}}, opt);
-                    assert.ok(r);
+                    assert.ok(!retried);
                     assert.ok(add_stub.called);
-                    assert.ok(refresh_stub.called);
                 }));
-                let t = (name, req, fake, is_ssl)=>it(name, ()=>etask(
+                const t = (name, req)=>it(name, ()=>etask(
                     function*()
                 {
-                    proxy.fake = !!fake;
+                    proxy.fake = true;
                     sandbox.stub(Server, 'get_random_ip', ()=>'1.1.1.1');
                     sandbox.stub(common, 'get_random_ip', ()=>'1.1.1.1');
                     l = yield lum({rules: [{
@@ -871,7 +866,7 @@ describe('proxy', ()=>{
                         action_type: 'ban_ip',
                         status: '200',
                         trigger_type: 'status',
-                    }], ssl: is_ssl});
+                    }]});
                     l.on('retry', opt=>{
                         l.lpm_request(opt.req, opt.res, opt.head, opt.post);
                     });
@@ -879,7 +874,7 @@ describe('proxy', ()=>{
                     {
                         let w = etask.wait();
                         l.on('usage', data=>w.return(data));
-                        let res = yield l.test(req());
+                        let res = yield l.test(req);
                         let usage = yield w;
                         assert.equal(res.statusCode, 200);
                         assert.deepStrictEqual(usage.rules, [{
@@ -888,10 +883,8 @@ describe('proxy', ()=>{
                             type: 'after_hdr'}]);
                     }
                 }));
-                t('ban_ip fake', ()=>({fake: 1}), false, true);
-                t('ban_ip http', ()=>({url: ping.http.url}), false, true);
-                t('ban_ip https', ()=>({url: ping.https.url}), true, false);
-                t('ban_ip https ssl', ()=>({url: ping.https.url}), true, true);
+                t('ban_ip http', {url: test_url.http});
+                t('ban_ip https', {url: test_url.https});
             });
             describe('request_url', ()=>{
                 let req, req_stub;
@@ -1109,26 +1102,6 @@ describe('proxy', ()=>{
                 t('does not trigger on diff domains',
                     'http://lumtest.com/test');
                 t('triggers', `http://${domain}/test`, 1);
-            });
-            describe('ip_cache', ()=>{
-                let ip_cache;
-                beforeEach(()=>ip_cache = new Ip_cache());
-                afterEach(()=>ip_cache.clear_timeouts());
-                it('has added entries', ()=>{
-                    ip_cache.add('10.0.0.1', 1000);
-                    ip_cache.add('10.0.0.2', 1000, 'lumtest.com');
-                    assert.ok(ip_cache.has('10.0.0.1'));
-                    assert.ok(ip_cache.has('10.0.0.2', 'lumtest.com'));
-                    assert.ok(!ip_cache.has('10.0.0.3'));
-                });
-                it('has IP/domain entry when IP entry exists', ()=>{
-                    ip_cache.add('10.0.0.2', 1000);
-                    assert.ok(ip_cache.has('10.0.0.2', 'lumtest.com'));
-                });
-                it('does not have IP entry when IP/domain entry exists', ()=>{
-                    ip_cache.add('10.0.0.2', 1000, 'lumtest.com');
-                    assert.ok(!ip_cache.has('10.0.0.2'));
-                });
             });
             it('refresh_ip', ()=>etask(function*(){
                 l = yield lum({rules: []});
