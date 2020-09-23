@@ -1,5 +1,16 @@
 Luminati Proxy manager - Change Log
 
+## 1.199.160 Stable
+- :bug: Fixed logout: stop authenticating requests after logging out
+
+## 1.198.827 Stable
+- :bug: Fixed inconsistency with updating banlist on Windows
+- :sparkles: Upgraded electron version to support recommended node version
+
+## 1.198.629 Stable
+- :bug: Fixed restarting Cloud LPM button from luminati.io/cp/lpm
+- :star: UI improvement: added Rules column option in proxy ports list
+
 ## 1.198.139 Stable
 - :bug: Fixed TypeError causing initalization of a proxy port to fail
 
