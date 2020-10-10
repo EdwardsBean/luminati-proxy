@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "version": "1.199.160",
+        "version": "1.202.232",
         "title": "Luminati Proxy Manager",
         "license": {
             "name": "MIT",
@@ -1375,8 +1375,8 @@
                     "description": "Log level"
                 },
                 "logs": {
-                    "type": "boolean",
-                    "description": "Enable logs for all proxies"
+                    "type": "number",
+                    "description": "Number of request logs to store"
                 },
                 "har_limit": {
                     "type": "number",

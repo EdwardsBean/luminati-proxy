@@ -1,5 +1,75 @@
 [
     {
+        "ver": "1.202.232",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "star",
+                "text": "Add option to add Unblocker Mobile UA flag to request username in unblocker zone"
+            }
+        ]
+    },
+    {
+        "ver": "1.202.64",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed city targeting being locked in UI despite allowing city targeting in zone plan"
+            }
+        ]
+    },
+    {
+        "ver": "1.201.857",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed API endpoint for banning multiple IPs"
+            }
+        ]
+    },
+    {
+        "ver": "1.201.722",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed workers crashing in certain Windows versions"
+            }
+        ]
+    },
+    {
+        "ver": "1.201.332",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed certain CLI flags not being utilized"
+            }
+        ]
+    },
+    {
+        "ver": "1.200.588",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed broken IPC causing crashes whole instance"
+            }
+        ]
+    },
+    {
+        "ver": "1.200.411",
+        "type": "stable",
+        "changes": [
+            {
+                "type": "bug",
+                "text": "Fixed out of memory crashes on Cloud LPM servers"
+            }
+        ]
+    },
+    {
         "ver": "1.199.160",
         "type": "stable",
         "changes": [

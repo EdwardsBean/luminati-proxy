@@ -1,5 +1,26 @@
 Luminati Proxy manager - Change Log
 
+## 1.202.232 Stable
+- :star: Add option to add Unblocker Mobile UA flag to request username in unblocker zone
+
+## 1.202.64 Stable
+- :bug: Fixed city targeting being locked in UI despite allowing city targeting in zone plan
+
+## 1.201.857 Stable
+- :bug: Fixed API endpoint for banning multiple IPs
+
+## 1.201.722 Stable
+- :bug: Fixed workers crashing in certain Windows versions
+
+## 1.201.332 Stable
+- :bug: Fixed certain CLI flags not being utilized
+
+## 1.200.588 Stable
+- :bug: Fixed broken IPC causing crashes whole instance
+
+## 1.200.411 Stable
+- :bug: Fixed out of memory crashes on Cloud LPM servers
+
 ## 1.199.160 Stable
 - :bug: Fixed logout: stop authenticating requests after logging out
 
