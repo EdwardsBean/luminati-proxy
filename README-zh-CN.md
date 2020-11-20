@@ -39,7 +39,7 @@
 - <a href="https://nodejs.org/en/download/">Node.js</a> 6+版
 
 ### Windows
-下载 <a href="https://lum-lpm.com/static/lpm/luminati-proxy-manager-v1.202.232-setup.exe">代理管理安装器</a>.
+下载 <a href="https://lum-lpm.com/static/lpm/luminati-proxy-manager-v1.207.977-setup.exe">代理管理安装器</a>.
 
 ### Linux/MacOS
 - 安装 Node.js 10.15.3版 (最好用x
@@ -150,6 +150,10 @@ Options:
   --multiply_vips                                     [boolean] [default: false]
   --max_ban_retries                                       [number] [default: 10]
   --preset                                    [string] [default: "session_long"]
+  --ua                          Unblocker Mobile UA   [boolean] [default: false]
+  --timezone                    Timezone ID to be used by the browser   [string]
+  --resolution                  Browser screen size                     [string]
+  --webrtc                      WebRTC plugin behavior in the browser   [string]
   --whitelist_ips               Default for all proxies whitelist ip list for
                                 granting access to them    [array] [default: []]
   --www_whitelist_ips           Whitelist ip list for granting access to browser
@@ -217,8 +221,10 @@ Options:
   --start-upgrader              Install CRON process that checks upgrades
   --stop-upgrader               Removes CRON process that checks upgrades
   --insecure-http-parser        Disables the strict checks
+  --proxy_country                                                  [default: ""]
   --bw_limit                                                        [default: 0]
   --flex_tls                                                    [default: false]
+  --cn                                                          [default: false]
   --api_domain_fallback                                   [default: "l-lpm.com"]
 ```
 

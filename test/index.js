@@ -347,7 +347,9 @@ describe('proxy', ()=>{
             t('auth', {customer: 'a', password: 'p'});
             t('zone', {zone: 'abc'});
             t('country', {country: 'il'});
-            t('city', {country: 'us', state: 'ny', city: 'newyork'});
+            t('city', {country: 'us', city: 'newyork'});
+            t('state', {state_perm: true, country: 'us', city: 'newyork',
+                state: 'ny'}, {country: 'us', city: 'newyork', state: 'ny'});
             t('static', {zone: 'static', ip: '127.0.0.1'});
             t('ASN', {zone: 'asn', asn: 28133});
             t('mobile', {zone: 'mobile', mobile: 'true'});
@@ -356,10 +358,10 @@ describe('proxy', ()=>{
             t('direct', pre_rule('direct'), {direct: true});
             t('session explicit', {session: 'test_session'});
             describe('lower case and spaces', ()=>{
-                t('long', {state: 'NY', city: 'New York'},
+                t('long', {state_perm: true, state: 'NY', city: 'New York'},
                     {state: 'ny', city: 'newyork'});
                 t('short',
-                    {state: 'NY', city: 'New York'},
+                    {state_perm: true, state: 'NY', city: 'New York'},
                     {state: 'ny', city: 'newyork'});
             });
             it('explicit any', ()=>etask(function*(){
@@ -616,7 +618,7 @@ describe('proxy', ()=>{
         describe('request state choice', ()=>{
             it('should use state sent in x-lpm-state header',
                 ()=>etask(function*(){
-                    l = yield lum();
+                    l = yield lum({state_perm: true});
                     const state = 'us';
                     const r = yield l.test({headers: {'x-lpm-state': state}});
                     assert.ok(r.headers['x-lpm-authorization']
@@ -1005,6 +1007,96 @@ describe('proxy', ()=>{
                     yield l.test({fake: 1});
                     const session_b = l.session_mgr.session;
                     assert.notEqual(session_a, session_b);
+                }));
+            });
+            describe('retry_port combined with unblocker', ()=>{
+                const make_cred_spy = _l=>sinon.spy(_l, 'get_req_cred');
+                const has_unblocker_flag = u=>u.endsWith('-unblocker');
+                const get_username = spy=>spy.returnValues[0].username;
+                const get_retry_rule = (retry_port=24001)=>({
+                    action: {retry: true, retry_port},
+                    action_type: 'retry_port',
+                    status: '200',
+                });
+                const sessions_are_unique = (...users)=>{
+                    const sess_id = u=>u.match(/(?<=session-)(.*?)(?=$|-)/)[1];
+                    return new Set(users.map(sess_id)).size==users.length;
+                };
+                it('waterfall to & from ub adjusts unblocker flag correctly',
+                ()=>etask(function*(){
+                    l = yield lum({rules: [get_retry_rule()], unblock: true});
+                    const l2 = yield lum({port: 24001,
+                        rules: [get_retry_rule(24002)]});
+                    const l3 = yield lum({port: 24002, unblock: true});
+                    l.on('retry', opt=>{
+                        l2.lpm_request(opt.req, opt.res, opt.head, opt.post);
+                    });
+                    l2.on('retry', opt=>{
+                        l3.lpm_request(opt.req, opt.res, opt.head, opt.post);
+                    });
+                    const cred_spies = [l, l2, l3].map(make_cred_spy);
+                    yield l.test({fake: 1, no_usage: true});
+                    const [u1, u2, u3] = cred_spies.map(get_username);
+                    assert.ok(has_unblocker_flag(u1));
+                    assert.ok(!has_unblocker_flag(u2));
+                    assert.ok(has_unblocker_flag(u3));
+                    assert.ok(sessions_are_unique(u1, u2, u3));
+                    l2.stop(true);
+                    l3.stop(true);
+                }));
+                it('ub to non-ub, followed by no retry', ()=>etask(function*(){
+                    l = yield lum({rules: [get_retry_rule()]});
+                    const l2 = yield lum({port: 24001, unblock: true});
+                    l.on('retry', opt=>{
+                        l2.lpm_request(opt.req, opt.res, opt.head, opt.post);
+                    });
+                    let non_retry_u;
+                    l.on('usage', ({username})=>{ non_retry_u = username; });
+                    const cred_spies = [l, l2].map(make_cred_spy);
+                    yield l.test({fake: 1, no_usage: true});
+                    const [u1, u2] = cred_spies.map(get_username);
+                    assert.ok(!has_unblocker_flag(u1));
+                    assert.ok(has_unblocker_flag(u2));
+                    l.rules.rules.pop();
+                    l.session_mgr.refresh_sessions();
+                    yield l.test({fake: 1});
+                    assert.ok(!has_unblocker_flag(non_retry_u));
+                    assert.ok(sessions_are_unique(u1, non_retry_u));
+                    l2.stop(true);
+                }));
+                it('non-ub to ub, followed by no retry', ()=>etask(function*(){
+                    l = yield lum({rules: [get_retry_rule()], unblock: true});
+                    const l2 = yield lum({port: 24001});
+                    l.on('retry', opt=>{
+                        l2.lpm_request(opt.req, opt.res, opt.head, opt.post);
+                    });
+                    let non_retry_u;
+                    l.on('usage', ({username})=>{ non_retry_u = username; });
+                    const cred_spies = [l, l2].map(make_cred_spy);
+                    yield l.test({fake: 1, no_usage: true});
+                    const [u1, u2] = cred_spies.map(get_username);
+                    assert.ok(has_unblocker_flag(u1));
+                    assert.ok(!has_unblocker_flag(u2));
+                    l.rules.rules.pop();
+                    l.session_mgr.refresh_sessions();
+                    yield l.test({fake: 1});
+                    assert.ok(has_unblocker_flag(non_retry_u));
+                    assert.ok(sessions_are_unique(u1, non_retry_u));
+                    l2.stop(true);
+                }));
+                it('waterfall from ub to ub keeps unblocker flag intact',
+                ()=>etask(function*(){
+                    l = yield lum({rules: [get_retry_rule()], unblock: true});
+                    const l2 = yield lum({port: 24001, unblock: true});
+                    l.on('retry', opt=>{
+                        l2.lpm_request(opt.req, opt.res, opt.head, opt.post);
+                    });
+                    const cred_spies = [l, l2].map(make_cred_spy);
+                    yield l.test({fake: 1, no_usage: true});
+                    const [u1, u2] = cred_spies.map(get_username);
+                    assert.ok(has_unblocker_flag(u1));
+                    assert.ok(has_unblocker_flag(u2));
+                    l2.stop(true);
                 }));
             });
             it('retry_port should update context port', ()=>etask(function*(){

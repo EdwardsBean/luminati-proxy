@@ -12,7 +12,7 @@ import etask from '../../util/etask.js';
 import zutil from '../../util/util.js';
 import classnames from 'classnames';
 import filesaver from 'file-saver';
-import {get_static_country, report_exception} from './util.js';
+import {get_static_country, report_exception, is_local} from './util.js';
 import $ from 'jquery';
 import Proxy_blank from './proxy_blank.js';
 import {Checkbox, any_flag, flag_with_title, No_zones,
@@ -26,11 +26,6 @@ import 'react-virtualized/styles.css';
 import Tooltip from './common/tooltip.js';
 import {OverlayTrigger, Tooltip as B_tooltip} from 'react-bootstrap';
 import './css/proxies.less';
-
-const is_local = ()=>{
-    const href = window.location.href;
-    return href.includes('localhost') || href.includes('127.0.0.1');
-};
 
 const Actions_cell = ({proxy, mgr, scrolling, open_delete_dialog})=>{
     return <Actions proxy={proxy} get_status={mgr.get_status}
@@ -121,6 +116,27 @@ class Type_cell extends React.Component {
             tip = 'Proxy port using your Luminati account';
         }
         return <T>{t=><Tooltip title={t(tip)}>{t(val)}</Tooltip>}</T>;
+    }
+}
+
+class Browser_cell extends Pure_component {
+    open_browser = e=>{
+        e.stopPropagation();
+        const _this = this;
+        this.etask(function*(){
+            const url = `/api/browser/${_this.props.proxy.port}`;
+            const res = yield window.fetch(url);
+            if (res.status==206)
+                $('#fetching_chrome_modal').modal();
+        });
+    };
+    render(){
+        const class_names = 'btn btn_lpm btn_lpm_small';
+        const tooltip = 'Open browser configured with this port';
+        return is_local() && <T>{t=><Tooltip title={t(tooltip)}>
+              <button className={class_names}
+                onClick={this.open_browser}>Browser</button>
+            </Tooltip>}</T>;
     }
 }
 
@@ -249,7 +265,6 @@ const columns = [
         render: Type_cell,
         tooltip: 'Type of connected proxy - Luminati proxy or external proxy '
             +'(non-Luminati)',
-        default: true,
         ext: true,
         width: 70,
     },
@@ -433,8 +448,19 @@ const columns = [
         ext: true,
         tooltip: 'Number of all requests sent from this proxy port',
         dynamic: true,
-        grow: 0,
+        grow: 1,
         width: 60,
+    },
+    {
+        key: 'browser',
+        title: 'Browser',
+        render: Browser_cell,
+        default: true,
+        tooltip: 'Open browser configured with this port',
+        width: 80,
+        grow: 0,
+        shrink: 0,
+        hide_col_title: true,
     },
 ];
 
@@ -814,7 +840,7 @@ const Proxies = withRouter(class Proxies extends Pure_component {
                         {cols.map(col=>
                           <Column key={col.key}
                             cellRenderer={this.cell_renderer.bind(this)}
-                            label={t(col.title)}
+                            label={col.hide_col_title ? '' : t(col.title)}
                             className="cp_td"
                             dataKey={col.key}
                             flexGrow={col.grow!==undefined ? col.grow : 1}
@@ -1017,16 +1043,6 @@ class Actions extends Pure_component {
             yield _this.props.update_proxies();
         });
     };
-    open_browser = e=>{
-        e.stopPropagation();
-        const _this = this;
-        this.etask(function*(){
-            const url = `/api/browser/${_this.props.proxy.port}`;
-            const res = yield window.fetch(url);
-            if (res.status==206)
-                $('#fetching_chrome_modal').modal();
-        });
-    };
     open_delete_dialog_with_port = e=>{
         e.stopPropagation();
         this.props.open_delete_dialog([this.props.proxy]);
@@ -1048,11 +1064,6 @@ class Actions extends Pure_component {
             <Action_icon id="refresh" scrolling={this.props.scrolling}
               on_click={this.refresh_sessions}
               tooltip="Refresh Sessions"/>
-            {is_local() &&
-              <Action_icon id="browser" scrolling={this.props.scrolling}
-                on_click={this.open_browser}
-                tooltip="Open browser configured with this port"/>
-            }
           </div>;
     }
 }

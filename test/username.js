@@ -60,12 +60,22 @@ describe('username', ()=>{
         });
         t('should skip when plan is not unblocker',
             {country: 'us', preset: 'unblocker', ua: true}, 'lum-country-us');
-        t('should skip when preset is not unblocker',
-            {country: 'us', unblock: true, ua: true}, 'lum-country-us');
-        t('should set only if plan & preset are unblocker',
+        t('should set only if plan is unblocker',
             {country: 'us', ua: true, preset: 'unblocker', unblock: true},
             'lum-country-us-ua-mobile');
-        t('should not be set by default', {country: 'us', unblock: true,
-             preset: 'unblocker'}, 'lum-country-us');
+        t('should not set anything if ua is not strictly true', {country: 'us',
+            ua: false, unblock: true, preset: 'unblocker'}, 'lum-country-us');
+    });
+    describe('state', ()=>{
+        const t = (name, opt, expected)=>it(name, ()=>{
+            const res = username.calculate_username(opt);
+            assert.equal(res.username, expected);
+        });
+        t('should skip state if permission is not granted',
+            {country: 'us', city: 'california', state: 'md'},
+            'lum-country-us-city-california');
+        t('attach state if state permission is granted',
+            {country: 'us', city: 'california', state: 'md', state_perm: true},
+            'lum-country-us-state-md-city-california');
     });
 });

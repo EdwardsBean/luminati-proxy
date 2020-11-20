@@ -20,7 +20,7 @@ import Rules from './rules.js';
 import Targeting from './targeting.js';
 import General from './general.js';
 import Rotation from './rotation.js';
-import Headers from './headers.js';
+import Browser from './browser.js';
 import Logs from './logs.js';
 import Alloc_modal from './alloc_modal.js';
 import {map_rule_to_form} from './rules.js';
@@ -28,7 +28,7 @@ import Tooltip from '../common/tooltip.js';
 import {Modal} from '../common/modals.js';
 import {T} from '../common/i18n.js';
 import {Select_zone} from '../common/controls.js';
-import {report_exception, bind_all} from '../util.js';
+import {report_exception, bind_all, is_local} from '../util.js';
 import Warnings_modal from '../common/warnings_modal.js';
 import '../css/proxy_edit.less';
 
@@ -307,9 +307,21 @@ const Index = withRouter(class Index extends Pure_component {
                 if (save_form[field]=='values')
                 {
                     save_form.reverse_lookup_values =
-                        save_form.reverse_lookup_values.split('\n');
+                        (save_form.reverse_lookup_values||'').split(' ');
                 }
                 delete save_form.reverse_lookup;
+            }
+            if (field=='reverse_lookup_values')
+            {
+                let values;
+                if (Array.isArray(values = save_form.reverse_lookup_values) &&
+                    !values.length)
+                {
+                    save_form.reverse_lookup = '';
+                    delete save_form.reverse_lookup_values;
+                }
+                else if (values && !Array.isArray(values))
+                    save_form.reverse_lookup_values = values.split(' ');
             }
             if (field=='smtp' && save_form[field])
             {
@@ -317,7 +329,12 @@ const Index = withRouter(class Index extends Pure_component {
                     save_form.smtp.filter(Boolean) : [];
             }
             if (field=='city' && save_form[field])
-                save_form.city = save_form.city.split('|')[0];
+            {
+                const [city, state] = save_form.city.split('|');
+                save_form.city = city;
+                if (state)
+                    save_form.state = state;
+            }
             if (field=='asn' && save_form[field])
                 save_form.asn = Number(save_form.asn);
             if (field=='headers' && save_form[field])
@@ -378,7 +395,7 @@ const Index = withRouter(class Index extends Pure_component {
 
 const Nav_tabs_wrapper = withRouter(
 class Nav_tabs_wrapper extends Pure_component {
-    tabs = ['logs', 'target', 'rotation', 'rules', 'headers', 'general'];
+    tabs = ['logs', 'target', 'rotation', 'rules', 'browser', 'general'];
     set_tab = id=>{
         const port = this.props.match.params.port;
         const pathname = `/proxy/${port}/${id}`;
@@ -457,7 +474,7 @@ const Main_window = withRouter(({match})=>
         <Route path={`${match.path}/target`} component={Targeting}/>
         <Route path={`${match.path}/rules`} component={Rules}/>
         <Route path={`${match.path}/rotation`} component={Rotation}/>
-        <Route path={`${match.path}/headers`} component={Headers}/>
+        <Route path={`${match.path}/browser`} component={Browser}/>
         <Route path={`${match.path}/general`} component={General}/>
         <Route path={`${match.path}/logs`} component={Logs}/>
         <Route exact path={match.path} component={({location})=>
@@ -526,10 +543,7 @@ class Nav extends Pure_component {
         const opts = presets.opts(this.is_unblocker(this.props.form.zone));
         const preset = this.props.form.preset;
         const is_unblocker = this.props.plan.type=='unblocker';
-        const preset_disabled = this.props.disabled || is_unblocker;
-        const href = window.location.href;
-        const is_local = href.includes('localhost')||
-            href.includes('127.0.0.1');
+        const preset_disabled = this.props.disabled;
         return <div className="nav">
               <Select_zone val={this.props.form.zone} on_change_wrapper={val=>
                   this.confirm_update(()=>this.update_zone(val))}
@@ -542,7 +556,7 @@ class Nav extends Pure_component {
                 tooltip={
                   <Preset_description preset={preset} rule_clicked={()=>0}/>
                 }/>
-              {is_local &&
+              {is_local() &&
                 <Open_browser_btn port={this.props.form.port}/>
               }
               <Confirmation_modal on_ok={this.state.confirm_action}/>

@@ -36,7 +36,7 @@ Please report issues or bugs to your Luminati account manager or from our [help 
 ## Installation
 
 ### Windows
-Download the [Luminati Proxy Manager installer](https://github.com/luminati-io/luminati-proxy/releases/download/v1.202.232/luminati-proxy-manager-v1.202.232-setup.exe)
+Download the [Luminati Proxy Manager installer](https://github.com/luminati-io/luminati-proxy/releases/download/v1.207.977/luminati-proxy-manager-v1.207.977-setup.exe)
 
 ### Linux/MacOS - Install script
 - Run the setup script to install
@@ -48,10 +48,10 @@ Or
 curl -L https://luminati.io/static/lpm/luminati-proxy-latest-setup.sh | bash
 ```
 ### Linux/MacOS - Manual install
-- Install Node.js 10 ([nodejs.org](https://nodejs.org/en/download/))
-  Node.js version for the proxy manager should be any at least 10.15.3
-- Make sure npm version is 6.4.1 or higher
-  - if not, run: `sudo npm install -g npm@6.4.1`
+- Install Node.js 12 ([nodejs.org](https://nodejs.org/en/download/))
+  Node.js version for the proxy manager should be any at least 12.18.3
+- Make sure npm version is 6.14.6 or higher
+  - if not, run: `sudo npm install -g npm@6.14.6`
 - Install Luminati Proxy from the terminal prompt:
 ```sh
 sudo npm install -g @luminati-io/luminati-proxy
@@ -109,7 +109,7 @@ luminati --daemon
 
 Luminati Proxy comes with a "dropin mode" which behaves exactly like the
 existing super-proxies. When running a proxy in dropin mode, you do not need to
-log in via the administrative UI in order to make requests through your
+sign in via the administrative UI in order to make requests through your
 proxies. Rather, the proxy username and password are provided with each request
 to the proxy server. This mode is enabled by default, and you can use this mode
 as an easy replacement when migrating from the regular super-proxy to the
@@ -205,6 +205,10 @@ Options:
   --multiply_vips                                     [boolean] [default: false]
   --max_ban_retries                                       [number] [default: 10]
   --preset                                    [string] [default: "session_long"]
+  --ua                          Unblocker Mobile UA   [boolean] [default: false]
+  --timezone                    Timezone ID to be used by the browser   [string]
+  --resolution                  Browser screen size                     [string]
+  --webrtc                      WebRTC plugin behavior in the browser   [string]
   --whitelist_ips               Default for all proxies whitelist ip list for
                                 granting access to them    [array] [default: []]
   --www_whitelist_ips           Whitelist ip list for granting access to browser
@@ -272,8 +276,10 @@ Options:
   --start-upgrader              Install CRON process that checks upgrades
   --stop-upgrader               Removes CRON process that checks upgrades
   --insecure-http-parser        Disables the strict checks
+  --proxy_country                                                  [default: ""]
   --bw_limit                                                        [default: 0]
   --flex_tls                                                    [default: false]
+  --cn                                                          [default: false]
   --api_domain_fallback                                   [default: "l-lpm.com"]
 ```
 
@@ -289,7 +295,7 @@ docker run luminati/luminati-proxy luminati
 docker run luminati/luminati-proxy luminati --version
 ```
 Make sure to forward appropriate ports. Proxy manager uses by default 22999
-for the web console and the api, 22555 for dropin and 24000 for first
+for the web console and the api, 22225 for dropin and 24000 for first
 configurable proxy.
 
 - To run docker with cli option see the below example:

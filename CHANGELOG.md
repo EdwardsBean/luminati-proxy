@@ -1,5 +1,75 @@
 Luminati Proxy manager - Change Log
 
+## 1.207.977 Stable
+- :star: Unlock option to select any preset when using a port with unblocker zone
+
+## 1.207.390 Stable
+- :bug: Fixed Auth Error when targeting city without plan state permissions
+
+## 1.207.58 Stable
+- :bug: Fixed banning IPs API when the list of IPs contains duplicates
+
+## 1.206.760 Stable
+- :bug: Fixed LPM upgrade on Windows
+
+## 1.206.425 Stable
+- :bug: Consistency improvements with LPM browser timezone emulation
+
+## 1.206.232 Stable
+- :star: UI improvements in zone description
+
+## 1.205.973 Stable
+- :sparkles: Upgraded webpack version
+
+## 1.205.266 Stable
+- :bug: Fixed a bug with the waterfall rule incorrectly attaching username flags
+
+## 1.205.228 Stable
+- :bug: Fix timezone feature inconsistency on Windows
+
+## 1.205.64 Stable
+- :bug: Fixed a bug causing requests to duplicate proxy API to hang
+
+## 1.205.22 Stable
+- :sparkles: Allow traffic from not whitelisted IPs when zone's credential is passed
+- :bug: Fixed saving city targeting
+
+## 1.204.545 Stable
+- :sparkles: Added a targeting option to select WebRTC behavior in the browser
+- :star: UI improvements: browser related configuration moved to a dedicated tab
+
+## 1.204.226 Stable
+- :bug: Fixed inconsistency with Ban IP rules when sending requests in short intervals
+
+## 1.203.920 Stable
+- :sparkles: Added a targeting option to select a custom resolution to be used by the browser
+
+## 1.203.897 Stable
+- :star: Use Chinese Super Proxies when needed
+
+## 1.203.800 Stable
+- :bug: Fixed support for resolving Chinese Super Proxies
+
+## 1.203.697 Stable
+- :bug: Fixed LPM installation script for Mac OS
+
+## 1.203.627 Stable
+- :bug: Fixed a Firefox UI bug in Windows Server 2012 when targeting amazon
+
+## 1.203.284 Stable
+- :sparkles: UI improvements in proxies view: open browser button moved to a dedicated column
+- :sparkles: Added a targeting option to select a timezone to be used by the LPM browser
+
+## 1.202.863 Stable
+- :sparkles: Existing proxy ports whose zone was disabled will not automatically switch to default zone
+- :bug: Fix reverse lookup configuration bug causing inifite loading in proxy view
+
+## 1.202.485 Stable
+- :bug: UI fixes in zone preset description
+
+## 1.202.410 Stable
+- :sparkles: Unlocked the option to set rules for unblocker zone preset
+
 ## 1.202.232 Stable
 - :star: Add option to add Unblocker Mobile UA flag to request username in unblocker zone
 

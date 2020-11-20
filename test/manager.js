@@ -22,6 +22,7 @@ const qw = require('../util/string.js').qw;
 const user_agent = require('../util/user_agent.js');
 const lpm_util = require('../util/lpm_util.js');
 const util_lib = require('../lib/util.js');
+const puppeteer = require('../lib/puppeteer.js');
 const customer = 'abc';
 const password = 'xyz';
 const {assert_has} = require('./common.js');
@@ -258,6 +259,28 @@ describe('manager', ()=>{
                 assert.equal(dropin.opt.proxy_port, 3939);
             }));
         });
+        it('invalid reverse_lookup_values doesnt break running proxies',
+        etask._fn(function*(_this){
+            _this.timeout(6000);
+            app = yield app_with_proxies([
+                {
+                    port: 24000,
+                    har_limit: 9999,
+                    reverse_lookup_values: ['1.1.1.1'],
+                },
+                {
+                    port: 24001,
+                    har_limit: 9999,
+                    reverse_lookup_values: 'invalid_not_array',
+                },
+            ]);
+            const proxies = yield json('api/proxies_running');
+            const proxy = port=>proxies.find(p=>p.port==port);
+            assert.equal(proxies.length, 2);
+            assert.ok(proxy(24000).reverse_lookup_values);
+            assert.deepEqual(proxy(24000).reverse_lookup_values, ['1.1.1.1']);
+            assert.ok(!proxy(24001).reverse_lookup_values);
+        }));
     });
     describe('default values', ()=>{
         it('default har_limit is 1024', ()=>etask(function*(){
@@ -462,6 +485,27 @@ describe('manager', ()=>{
                 t('ip', {ip: '1.1.1.1'}, 204);
                 t('no ip', {ip: 'r0123456789abcdef0123456789ABCDEF'}, 204);
             });
+            describe('duplicate port', ()=>{
+                it('works after updating port', etask._fn(function*(_this){
+                    app = yield app_with_proxies([{port: 24000}], {});
+                    const put_proxy = {port: 24001};
+                    yield json('api/proxies/24000', 'put', {proxy: put_proxy});
+                    const res = yield api_json('api/proxy_dup',
+                        {method: 'post', body: {port: 24001}});
+                    assert.equal(res.statusCode, 200);
+                }));
+                it('does not hang on errors', etask._fn(function*(_this){
+                    app = yield app_with_proxies([{port: 24000}], {});
+                    const stub = sinon.stub(app.manager, 'create_new_proxy',
+                        ()=>{ throw new Error('error creating proxy'); });
+                    const res = yield api_json('api/proxy_dup',
+                        {method: 'post', body: {port: 24000}});
+                    assert.equal(res.statusCode, 500);
+                    assert.equal(res.body,
+                        'Server error: error creating proxy');
+                    stub.restore();
+                }));
+            });
         });
         describe('har logs', function(){
             this.timeout(6000);
@@ -559,6 +603,38 @@ describe('manager', ()=>{
                 assert.equal(app.manager._defaults.whitelist_ips[0],
                     '1.1.0.0/20');
             }));
+        });
+        describe('open browser with custom opts', ()=>{
+            let launch_stub, open_stub;
+            beforeEach(()=>{
+                launch_stub = sinon.stub(puppeteer, 'launch', ()=>null);
+                open_stub = sinon.stub(puppeteer, 'open_page', ()=>null);
+            });
+            afterEach(()=>{
+                [launch_stub, open_stub].forEach(stub=>sinon.restore(stub));
+            });
+            const t = (name, opt, arg, expected)=>it(name, etask._fn(
+            function*(){
+                app = yield app_with_proxies([Object.assign({port: 24000},
+                    opt)]);
+                yield api_json('api/browser/24000');
+                const [[, , {[arg]: target_arg}]] = open_stub.args;
+                assert.deepEqual(target_arg, expected);
+            }));
+            t('country is defined and timezone is auto',
+                {country: 'as', timezone: 'auto'}, 'timezone',
+                'Pacific/Pago_Pago');
+            t('country is defined and timezone is defined',
+                {country: 'us', timezone: 'Asia/Tokyo'}, 'timezone',
+                'Asia/Tokyo');
+            t('country is defined and timezone is disabled',
+                {country: 'ca'}, 'timezone', undefined);
+            t('country is any and timezone is defined',
+                {timezone: 'America/Sao_Paulo'}, 'timezone',
+                'America/Sao_Paulo');
+            t('with custom resolution', {resolution: '800x600'},
+                'resolution', {width: 800, height: 600});
+            t('webrtc is enabled', {webrtc: true}, 'webrtc', true);
         });
     });
     describe('flags', ()=>{

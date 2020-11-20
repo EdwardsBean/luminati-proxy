@@ -49,6 +49,7 @@ export const tabs = {
                 label: 'Operating System',
                 tooltip: 'Operating System',
             },
+
         },
     },
     rules: {
@@ -169,7 +170,7 @@ export const tabs = {
                     unavailable and redirect to confirmation page before new IP
                     is taken`,
             },
-            proxy: {
+            proxy_country: {
                 label: `Super Proxy location`,
                 tooltip: `Location of Super Proxy is chosen automatically.
                     Sometimes choosing Chinese Super Proxy works better when
@@ -200,15 +201,27 @@ export const tabs = {
             },
         },
     },
-    headers: {
-        label: 'Headers',
-        tooltip: `Set default headers that are sent with each request from this
-            proxy port`,
+    browser: {
+        label: 'Browser',
+        tooltip: 'Configure settings for the browser launched by LPM',
         fields: {
             ua: {
                 label: 'Unblocker Mobile UA',
                 tooltip: `Let Unblocker set a random User-Agent from a mobile
                     browser automatically`,
+            },
+            timezone: {
+                label: 'Timezone',
+                tooltip: 'Select a timezone to be used by the browser',
+            },
+            resolution: {
+                label: 'Resolution',
+                tooltip: 'Window resolution to be used by the browser',
+            },
+            webrtc: {
+                label: 'WebRTC',
+                tooltip: `Select between disabling WebRTC APIs in the browser
+                    and prevent a potential IP leakage, and keeping it enabled`
             },
         },
     },

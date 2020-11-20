@@ -65,6 +65,7 @@ conf.server_default = {
     proxy: 'zproxy.lum-superproxy.io',
     proxy_port: 22225,
     proxy_retry: 2,
+    proxy_country: '',
     socket_inactivity_timeout: 120000,
     preset: 'session_long',
     route_err: 'pass_dyn',
@@ -77,6 +78,7 @@ conf.server_default = {
     session: true,
     bw_limit: 0,
     log: 'notice',
+    ua: false,
 };
 conf.manager_default = Object.assign({}, conf.server_default, {
     www: 22999,
@@ -103,6 +105,7 @@ conf.manager_default = Object.assign({}, conf.server_default, {
     sync_config: false,
     sync_zones: true,
     sync_stats: true,
+    cn: false,
 });
 delete conf.manager_default.port;
 conf.log_levels = {

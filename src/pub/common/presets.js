@@ -58,6 +58,7 @@ const presets = {
         },
         clean: opt=>{
             opt.rotate_session = false;
+            opt.ua = false;
         },
         disabled: {
             pool_size: true,
@@ -66,12 +67,10 @@ const presets = {
             session: true,
             session_termination: true,
             headers: true,
-            rules: true,
             proxy: true,
             dns: true,
             reverse_lookup: true,
             smtp: true,
-            trigger_type: true,
         },
         hidden: true,
     },
@@ -83,6 +82,7 @@ const presets = {
         clean: opt=>{
             opt.pool_size = 0;
             opt.rotate_session = false;
+            opt.session = '';
         },
     },
 };
@@ -97,13 +97,11 @@ for (let k in presets)
 
 const E = {
     opts: is_unblocker=>{
-        if (is_unblocker)
-            return [{key: presets.unblocker.title, value: 'unblocker'}];
-        return Object.keys(presets).filter(p=>!presets[p].hidden).map(p=>{
-            let key = presets[p].title;
-            if (presets[p].default)
-                key = `${key} (default)`;
-            return {key, value: p};
+        return Object.entries(presets).flatMap(([p, o])=>{
+            if (!is_unblocker && o.hidden)
+                return [];
+            const key = o.default ? `${o.title} (default)` : o.title;
+            return [{key, value: p}];
         });
     },
     get: key=>presets[key],
